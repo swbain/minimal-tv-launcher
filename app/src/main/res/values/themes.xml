@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Dark, full-screen, no action bar. The actual UI colors come from the Compose TV theme. -->
+    <style name="Theme.MinimalTVLauncher" parent="@android:style/Theme.DeviceDefault.NoActionBar">
+        <item name="android:windowBackground">@android:color/black</item>
+    </style>
+</resources>
