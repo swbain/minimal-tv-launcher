@@ -10,6 +10,9 @@
         android:name="android.hardware.touchscreen"
         android:required="false" />
 
+    <!-- Weather header: GeoJS geolocation + Open-Meteo forecast, both HTTPS. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <!-- Package visibility (Android 11+): a launcher needs to enumerate the
          launchable activities of other apps. -->
     <queries>

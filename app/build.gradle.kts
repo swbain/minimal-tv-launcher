@@ -1,6 +1,7 @@
 plugins {
   alias(libs.plugins.android.application)
   alias(libs.plugins.compose.compiler)
+  alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -12,6 +13,7 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
@@ -35,6 +37,11 @@ android {
       resources {
         excludes += "/META-INF/{AL2.0,LGPL2.1}"
       }
+    }
+
+    testOptions {
+      // JVM unit tests build AppInfo fixtures, whose ComponentName is an android.jar stub.
+      unitTests.isReturnDefaultValues = true
     }
 }
 
@@ -61,6 +68,10 @@ dependencies {
   implementation(libs.androidx.compose.ui.tooling.preview)
   // Compose for TV (focus-aware, D-pad friendly Material components)
   implementation(libs.androidx.tv.material)
+
+  // Networking + JSON (weather: GeoJS geolocation, Open-Meteo forecast)
+  implementation(libs.okhttp)
+  implementation(libs.kotlinx.serialization.json)
   // Tooling
   debugImplementation(libs.androidx.compose.ui.tooling)
   // Instrumented tests

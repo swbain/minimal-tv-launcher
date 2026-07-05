@@ -9,8 +9,13 @@ import androidx.core.graphics.drawable.toBitmap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+/** The ViewModel's seam onto "whatever can produce the launchable apps" — fake-able in tests. */
+fun interface AppsLoader {
+  suspend fun loadApps(): List<AppInfo>
+}
+
 /** Loads the list of launchable apps installed on the device. */
-class AppsRepository(context: Context) {
+class AppsRepository(context: Context) : AppsLoader {
 
   private val appContext = context.applicationContext
   private val packageManager: PackageManager = appContext.packageManager
@@ -23,7 +28,7 @@ class AppsRepository(context: Context) {
    * `LAUNCHER` category so that sideloaded phone apps remain reachable. This runs off the main
    * thread because loading each app's banner/icon touches disk.
    */
-  suspend fun loadApps(): List<AppInfo> = withContext(Dispatchers.IO) {
+  override suspend fun loadApps(): List<AppInfo> = withContext(Dispatchers.IO) {
     val resolved = LinkedHashMap<String, ResolveInfo>()
 
     // Prefer the TV (leanback) launcher entry for each package.

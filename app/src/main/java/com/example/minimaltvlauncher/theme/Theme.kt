@@ -5,10 +5,24 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.darkColorScheme
 
 /**
- * Minimal dark theme for the TV launcher. TV UIs are almost always dark so the content sits
- * comfortably in a dim living room, so we don't follow the system light/dark setting here.
+ * Nocturne theme: always dark (TV UIs sit in dim living rooms; we don't follow the system
+ * light/dark setting), Newsreader serif typography, amber accent.
  */
 @Composable
 fun MinimalTvLauncherTheme(content: @Composable () -> Unit) {
-  MaterialTheme(colorScheme = darkColorScheme(), content = content)
+  MaterialTheme(
+    colorScheme =
+      darkColorScheme(
+        background = NocturneColors.BaseBlack,
+        surface = NocturneColors.BaseBlack,
+        surfaceVariant = NocturneColors.CardFill,
+        onSurface = NocturneColors.TextPrimary,
+        onSurfaceVariant = NocturneColors.TextSecondary,
+        border = NocturneColors.CardBorder,
+        borderVariant = NocturneColors.CardBorder,
+        primary = NocturneColors.Amber,
+      ),
+    typography = NocturneTypography,
+    content = content,
+  )
 }

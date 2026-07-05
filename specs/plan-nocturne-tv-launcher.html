@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plan: Nocturne — Minimal TV Launcher</title>
+<style>
+  :root {
+    /* Nocturne visual identity — synced with generated images */
+    --bg: #0a0b0e;
+    --bg-raised: #12141a;
+    --bg-inset: #08090c;
+    --border: #23262e;
+    --border-soft: #1a1d24;
+    --text: #e8eaef;
+    --text-secondary: #cdd2da;
+    --text-muted: #7c7f88;
+    --accent: #efa831;          /* oklch(0.78 0.15 75) — amber focus ring */
+    --accent-soft: rgba(239, 168, 49, 0.12);
+    --accent-glow: #f9b73f;     /* oklch(0.82 0.15 78) — sun dot */
+    --ok: #7fb97a;
+    --danger: #c96a5c;
+    --serif: 'Newsreader', Georgia, 'Times New Roman', serif;
+    --mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--serif);
+    font-size: 17px;
+    line-height: 1.65;
+  }
+  main { max-width: 960px; margin: 0 auto; padding: 56px 32px 140px; }
+  h1 { font-size: 40px; font-weight: 600; line-height: 1.15; margin: 0 0 12px; letter-spacing: 0.2px; }
+  h2 {
+    font-size: 27px; font-weight: 600; margin: 64px 0 16px;
+    padding-bottom: 10px; border-bottom: 1px solid var(--border);
+  }
+  h3 { font-size: 21px; font-weight: 600; margin: 36px 0 10px; }
+  h4 { font-size: 17.5px; font-weight: 600; margin: 28px 0 8px; color: var(--text-secondary); }
+  p { margin: 0 0 14px; }
+  a { color: var(--accent); }
+  em { color: var(--text-secondary); }
+  code {
+    font-family: var(--mono); font-size: 0.82em;
+    background: var(--bg-raised); border: 1px solid var(--border-soft);
+    border-radius: 5px; padding: 1.5px 6px; color: var(--text-secondary);
+  }
+  pre {
+    background: var(--bg-inset); border: 1px solid var(--border-soft); border-radius: 10px;
+    padding: 16px 18px; overflow-x: auto; line-height: 1.5; margin: 14px 0 20px;
+  }
+  pre code { background: none; border: none; padding: 0; font-size: 13px; color: var(--text-secondary); }
+  ul { padding-left: 26px; margin: 0 0 16px; }
+  li { margin: 5px 0; }
+  figure { margin: 30px 0; text-align: center; }
+  figure img {
+    max-width: 100%; border-radius: 14px;
+    border: 1px solid var(--border); box-shadow: 0 24px 60px -24px rgba(0,0,0,0.8);
+  }
+  figcaption { font-style: italic; font-size: 14.5px; color: var(--text-muted); margin-top: 12px; }
+  table { border-collapse: collapse; width: 100%; margin: 14px 0 22px; font-size: 15px; }
+  th, td { border: 1px solid var(--border-soft); padding: 8px 12px; text-align: left; }
+  th { background: var(--bg-raised); font-weight: 600; color: var(--text-secondary); }
+  td code { font-size: 12.5px; }
+  header .meta { margin: 18px 0 4px; }
+  details {
+    background: var(--bg-raised); border: 1px solid var(--border-soft);
+    border-radius: 10px; padding: 12px 18px; margin: 12px 0;
+  }
+  details summary { cursor: pointer; font-weight: 600; color: var(--text-secondary); }
+  details[open] summary { margin-bottom: 10px; }
+  dl { display: grid; grid-template-columns: 130px 1fr; gap: 6px 18px; margin: 8px 0; font-size: 14.5px; }
+  dt { color: var(--text-muted); font-style: italic; }
+  dd { margin: 0; font-family: var(--mono); font-size: 12.5px; word-break: break-all; align-self: center; }
+  .subtitle { font-style: italic; color: var(--text-muted); font-size: 18px; margin-bottom: 6px; }
+  .tag {
+    display: inline-block; font-family: var(--mono); font-size: 11px; font-weight: 600;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    border-radius: 5px; padding: 2px 8px; margin-right: 6px; vertical-align: 1px;
+  }
+  .tag.existing { background: rgba(127, 185, 122, 0.12); color: var(--ok); border: 1px solid rgba(127,185,122,0.3); }
+  .tag.new { background: var(--accent-soft); color: var(--accent); border: 1px solid rgba(239,168,49,0.35); }
+  .files li { margin: 8px 0; }
+  .phase {
+    background: var(--bg-raised); border: 1px solid var(--border);
+    border-radius: 16px; padding: 26px 30px 22px; margin: 26px 0;
+  }
+  .phase > h3 { margin-top: 0; }
+  .status {
+    background: var(--bg-inset); color: var(--accent); border: 1px solid var(--border);
+    min-width: 34px; display: inline-block; text-align: center;
+  }
+  .checklist { list-style: none; padding-left: 6px; }
+  .checklist li { margin: 9px 0; padding-left: 2px; }
+  .loop {
+    background: var(--accent-soft); border: 1px solid rgba(239,168,49,0.35);
+    border-radius: 10px; padding: 14px 18px; margin: 20px 0 4px;
+    font-size: 15.5px; color: var(--text-secondary);
+  }
+  .qa-answer { color: var(--text-secondary); font-size: 15.5px; margin: 4px 0 2px; }
+  .callout {
+    border-left: 3px solid var(--accent); background: var(--bg-raised);
+    border-radius: 0 10px 10px 0; padding: 12px 18px; margin: 16px 0; font-size: 15.5px;
+  }
+  .swatch { display: inline-block; width: 13px; height: 13px; border-radius: 4px; border: 1px solid var(--border); vertical-align: -1.5px; margin-right: 6px; }
+</style>
+</head>
+<body>
+<main>
+
+  <!-- ===== HEADER + UPDATABLE METADATA ===== -->
+  <header>
+    <h1>Plan: Nocturne — Minimal TV Launcher</h1>
+    <p class="subtitle">Dark cinematic Android TV launcher · Compose for TV · MVI-lite MVVM · live clock &amp; Open-Meteo weather</p>
+    <details class="meta">
+      <summary>Metadata</summary>
+      <dl>
+        <dt>created</dt>      <dd>2026-07-04T18:18:49-0500</dd>
+        <dt>modified</dt>     <dd>2026-07-04T18:18:49-0500, 2026-07-04T19:45:57-0500</dd>
+        <dt>commits</dt>      <dd>f74f794</dd>
+        <dt>branches</dt>     <dd>main, main</dd>
+        <dt>agent name</dt>   <dd>Claude Fable 5 (claude-fable-5), Claude Fable 5 (claude-fable-5)</dd>
+        <dt>session id</dt>   <dd>de9cc1ad-6b9f-4760-b29c-fa7d1a707126, ca9776ad-b8f8-4b5e-86aa-1cdfca3e57ff</dd>
+        <dt>back refs</dt>    <dd>claude.ai/design project 6c5f3189-1ed7-4d80-9189-a91371035e23 (TV Launcher.dc.html — primary; Weather Layouts.dc.html — variant B "Big clock hero" is the chosen layout)</dd>
+        <dt>forward refs</dt> <dd>—</dd>
+      </dl>
+    </details>
+  </header>
+
+  <!-- Hero image — synced to the :root visual identity. -->
+  <figure>
+    <img src="plan-nocturne-tv-launcher/hero.png" alt="Nocturne launcher concept: dark cinematic TV home screen, large serif clock top-right with amber sun dot and weather, 4-column grid of 16:9 app cards with one amber-focused card">
+    <figcaption>Nocturne: wallpaper-backed home screen, big serif clock with weather, and a 4×N grid of focusable app cards.</figcaption>
+  </figure>
+
+  <!-- ===== PURPOSE / PROBLEM / SOLUTION ===== -->
+  <section id="purpose">
+    <h2>Purpose</h2>
+    <p>Transform the existing bare-bones Android TV launcher into <strong>Nocturne</strong>, the dark cinematic launcher designed in the claude.ai/design project (<code>TV Launcher.dc.html</code>): a bundled Wilco-poster wallpaper under layered scrims, a large Newsreader-serif clock with live weather in the top-right, and a 4-column grid of 16:9 app cards with an amber focus ring. Along the way, restructure the presentation layer into the requested <strong>MVI-lite MVVM</strong> shape: the ViewModel exposes a single immutable <code>StateFlow&lt;LauncherState&gt;</code>, accepts <code>LauncherAction</code>s, and emits one-shot <code>LauncherEvent</code>s over a <code>SharedFlow</code>.</p>
+  </section>
+
+  <section id="problem">
+    <h2>Problem</h2>
+    <p>The current app is a functional skeleton, not the designed product. It renders a plain dark grid with a generic "Apps" header and a small clock; there is no wallpaper, no weather, no serif identity, and the focus treatment is stock TV-Material. Architecturally it is close to but not quite the target shape: state flows out of the ViewModel, but side effects (launching apps, failure recovery) live in the Activity as plain callbacks, the clock ticks inside a composable, and the ViewModel hard-constructs its repository, making it untestable. There is also no networking stack, no location strategy, and no chosen weather provider — the design's "72° Sunny" is a hardcoded mock.</p>
+    <figure>
+      <img src="plan-nocturne-tv-launcher/problem.png" alt="Side-by-side comparison: today's flat generic app grid versus the rich Nocturne design">
+      <figcaption>Today's skeleton grid vs. the Nocturne design it must become.</figcaption>
+    </figure>
+  </section>
+
+  <section id="solution">
+    <h2>Solution</h2>
+    <p>Five phases, each independently verifiable. First lay the foundation (network/serialization dependencies, bundled Newsreader fonts, Nocturne color/type theme — the wallpaper PNG is already bundled at <code>drawable-nodpi/wallpaper.png</code>). Then build a small weather data layer: GeoJS IP-geolocation (HTTPS, keyless — verified live) resolves lat/lon/country once per process, Open-Meteo (keyless, 10k calls/day free) supplies current temperature + WMO weather code, and a pure mapping table turns codes into "Sunny"-style labels. Third, reshape the ViewModel into the MVI-lite contract — single <code>LauncherState</code>, <code>onAction()</code> input, <code>SharedFlow</code> events for app launches — with constructor-injected repositories and a minute-aligned clock ticker. Fourth, rebuild the UI to the design: wallpaper + two scrims, right-aligned clock/weather header (Weather Layouts variant B), and restyled banner cards with the amber focus treatment. Finally, run every quality gate plus an on-device QA checklist.</p>
+    <figure>
+      <img src="plan-nocturne-tv-launcher/solution.png" alt="Architecture diagram: UI and ViewModel exchanging State and Actions with an Events side channel, repositories below connecting to GeoJS and Open-Meteo">
+      <figcaption>Unidirectional data flow: Actions in, State out, Events for one-shots; repositories isolate the two keyless HTTP APIs.</figcaption>
+    </figure>
+  </section>
+
+  <!-- ===== RELEVANT FILES ===== -->
+  <section id="files" class="files">
+    <h2>Relevant Files</h2>
+    <p>Single-module app, package <code>com.example.minimaltvlauncher</code>. Paths below are relative to the repo root; Kotlin sources live under <code>app/src/main/java/com/example/minimaltvlauncher/</code>.</p>
+
+    <h3>Existing Files</h3>
+    <ul>
+      <li><span class="tag existing">existing</span> <code>gradle/libs.versions.toml</code> — add OkHttp, kotlinx-serialization, and the serialization plugin</li>
+      <li><span class="tag existing">existing</span> <code>app/build.gradle.kts</code> — apply serialization plugin, add new dependencies</li>
+      <li><span class="tag existing">existing</span> <code>app/src/main/AndroidManifest.xml</code> — add <code>INTERNET</code> permission (both APIs are HTTPS; no cleartext config needed)</li>
+      <li><span class="tag existing">existing</span> <code>.../MainActivity.kt</code> — collect <code>events</code> for one-shot app launches, dispatch <code>LauncherAction</code>s, build ViewModel via factory</li>
+      <li><span class="tag existing">existing</span> <code>.../LauncherViewModel.kt</code> — rewrite as MVI-lite: single state, action inlet, event outlet, clock ticker, weather polling</li>
+      <li><span class="tag existing">existing</span> <code>.../LauncherScreen.kt</code> — rebuild to the Nocturne design (background, header, grid, cards)</li>
+      <li><span class="tag existing">existing</span> <code>.../AppsRepository.kt</code> — unchanged logic; gains an interface only if needed for VM tests (prefer a thin <code>fun interface</code> loader)</li>
+      <li><span class="tag existing">existing</span> <code>.../AppInfo.kt</code> — unchanged</li>
+      <li><span class="tag existing">existing</span> <code>.../theme/Theme.kt</code> — replace stock dark scheme with the Nocturne palette and Newsreader typography</li>
+      <li><span class="tag existing">existing</span> <code>app/src/main/res/drawable-nodpi/wallpaper.png</code> — bundled Wilco poster (1906×1420, 6.2 MB; optional compression task in Phase 5)</li>
+    </ul>
+
+    <h3>New Files</h3>
+    <ul>
+      <li><span class="tag new">new</span> <code>.../LauncherContract.kt</code> — <code>LauncherState</code>, <code>LauncherAction</code>, <code>LauncherEvent</code>, and sub-states (<code>AppsUiState</code>, <code>ClockUiState</code>, <code>WeatherUiState</code>)</li>
+      <li><span class="tag new">new</span> <code>.../ClockFormatter.kt</code> — pure epoch-millis → <code>ClockUiState</code> formatter (SimpleDateFormat; no desugaring needed at minSdk 24)</li>
+      <li><span class="tag new">new</span> <code>.../weather/JsonFetcher.kt</code> — <code>fun interface JsonFetcher { suspend fun fetch(url: String): String }</code> + OkHttp implementation with timeouts</li>
+      <li><span class="tag new">new</span> <code>.../weather/GeoJsApi.kt</code> — GeoJS DTO (lat/lon arrive as <em>strings</em>) + parse into <code>GeoLocation</code></li>
+      <li><span class="tag new">new</span> <code>.../weather/OpenMeteoApi.kt</code> — forecast URL builder + response DTO (<code>temperature_2m</code>, <code>weather_code</code>, <code>is_day</code>)</li>
+      <li><span class="tag new">new</span> <code>.../weather/WmoWeatherCode.kt</code> — WMO code → display label table (day/night aware)</li>
+      <li><span class="tag new">new</span> <code>.../weather/WeatherRepository.kt</code> — orchestrates geolocate → forecast, °F/°C by country, 30-minute TTL cache</li>
+      <li><span class="tag new">new</span> <code>.../theme/Type.kt</code> — Newsreader <code>FontFamily</code> + TV type scale</li>
+      <li><span class="tag new">new</span> <code>.../theme/NocturneColors.kt</code> — palette constants (or fold into <code>Theme.kt</code>; builder's choice)</li>
+      <li><span class="tag new">new</span> <code>.../ui/NocturneBackground.kt</code> — wallpaper image + linear scrim + radial vignette</li>
+      <li><span class="tag new">new</span> <code>app/src/main/res/font/newsreader_regular.ttf</code> (+ <code>_medium</code>, <code>_semibold</code>, <code>_italic</code>, <code>_medium_italic</code>) — bundled OFL-licensed static fonts</li>
+      <li><span class="tag new">new</span> <code>app/src/test/java/.../weather/WmoWeatherCodeTest.kt</code> — mapping unit tests</li>
+      <li><span class="tag new">new</span> <code>app/src/test/java/.../weather/GeoJsApiTest.kt</code> — DTO parse tests (string coords)</li>
+      <li><span class="tag new">new</span> <code>app/src/test/java/.../weather/OpenMeteoApiTest.kt</code> — URL + DTO parse tests</li>
+      <li><span class="tag new">new</span> <code>app/src/test/java/.../weather/WeatherRepositoryTest.kt</code> — fake-fetcher success/failure/cache tests</li>
+      <li><span class="tag new">new</span> <code>app/src/test/java/.../ClockFormatterTest.kt</code> — fixed-instant formatting tests</li>
+      <li><span class="tag new">new</span> <code>app/src/test/java/.../LauncherViewModelTest.kt</code> — state/action/event tests with fakes</li>
+      <li><span class="tag new">new</span> <code>app/src/androidTest/java/.../LauncherScreenTest.kt</code> — Compose smoke test with fake state</li>
+    </ul>
+  </section>
+
+  <!-- ===== IMPLEMENTATION PHASES ===== -->
+  <section id="phases">
+    <h2>Implementation Phases</h2>
+    <p><strong>IMPORTANT:</strong> Execute every phase and task step by step, in order, top to bottom.</p>
+    <p>Status markers: <code>[]</code> idle · <code>[wip]</code> in progress · <code>[x]</code> complete · <code>[f]</code> failed. All start as <code>[]</code>; the Build Plan workflow updates them as it works.</p>
+
+    <!-- ================= PHASE 1 ================= -->
+    <div class="phase">
+      <h3><code class="status">[x]</code> Phase 1: Foundation — dependencies, fonts, theme</h3>
+      <p>Wire in the two new libraries, the INTERNET permission, the bundled Newsreader fonts, and the Nocturne palette/typography so every later phase compiles against the real theme.</p>
+
+      <h4>1. Gradle dependencies</h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> In <code>gradle/libs.versions.toml</code> add versions <code>okhttp = "5.1.0"</code> and <code>kotlinxSerializationJson = "1.9.0"</code> (verify latest stable on Maven Central and prefer it; both are <code>mavenCentral</code> artifacts so the restricted <code>google()</code> content filters in <code>settings.gradle.kts</code> are unaffected)</li>
+        <li><code class="status">[x]</code> Add libraries <code>okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }</code> and <code>kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }</code></li>
+        <li><code class="status">[x]</code> Add plugin <code>kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }</code> (rides the existing <code>kotlin = "2.3.20"</code> version)</li>
+        <li><code class="status">[x]</code> In <code>app/build.gradle.kts</code>: <code>alias(libs.plugins.kotlin.serialization)</code> in the plugins block; <code>implementation(libs.okhttp)</code> and <code>implementation(libs.kotlinx.serialization.json)</code> in dependencies</li>
+      </ul>
+
+      <h4>2. Manifest</h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> Add <code>&lt;uses-permission android:name="android.permission.INTERNET" /&gt;</code> above the <code>&lt;queries&gt;</code> element</li>
+      </ul>
+
+      <h4>3. Newsreader fonts</h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> Download static Newsreader TTFs (regular 400, medium 500, semibold 600, italic 400, medium-italic 500) via google-webfonts-helper: <code>curl -L "https://gwfh.mranftl.com/api/fonts/newsreader?download=zip&amp;subsets=latin&amp;variants=regular,500,600,italic,500italic&amp;formats=ttf" -o newsreader.zip</code> (fallback: static instances from the fonts.google.com Newsreader download; do <em>not</em> bundle the variable font — minSdk 24 predates variable-font support at API 26)</li>
+        <li><code class="status">[x]</code> Place as <code>app/src/main/res/font/newsreader_regular.ttf</code>, <code>newsreader_medium.ttf</code>, <code>newsreader_semibold.ttf</code>, <code>newsreader_italic.ttf</code>, <code>newsreader_medium_italic.ttf</code> (Android resource names: lowercase, underscores only)</li>
+        <li><code class="status">[x]</code> Create <code>theme/Type.kt</code>: a <code>Newsreader</code> <code>FontFamily</code> mapping those five files to <code>FontWeight.Normal/Medium/SemiBold</code> and italic styles, and a TV-Material <code>Typography</code> built on it (sizes per the px→dp table in Notes)</li>
+      </ul>
+
+      <h4>4. Nocturne palette + theme</h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> Create <code>theme/NocturneColors.kt</code> with the palette from the Notes color table (base <code>#08090C</code>, text tiers, amber accent <code>#EFA831</code>, sun-dot <code>#F9B73F</code>, card fallback fill <code>White @ 3.5%</code>, card border <code>White @ 6%</code>)</li>
+        <li><code class="status">[x]</code> Update <code>theme/Theme.kt</code>: keep the always-dark <code>darkColorScheme</code> but override <code>background</code>, <code>surface</code>, <code>surfaceVariant</code>, <code>onSurface</code>, <code>onSurfaceVariant</code>, and <code>border</code>-adjacent slots with Nocturne values, and pass the new <code>Typography</code></li>
+        <li><code class="status">[x]</code> Confirm <code>drawable-nodpi/wallpaper.png</code> is present (already copied) and referenced nowhere yet — the background composable lands in Phase 4</li>
+      </ul>
+
+      <h4>5. Testing Strategy</h4>
+      <p>Nothing behavioral yet — the gate is that the project still compiles and lints cleanly with the new plugin, dependencies, fonts, and theme in place. Font resources are validated at build time by AAPT (bad TTFs or bad resource names fail the build).</p>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> <code>./gradlew :app:assembleDebug</code> — serialization plugin applies, deps resolve, font resources pack</li>
+        <li><code class="status">[x]</code> <code>./gradlew :app:lintDebug</code> — no new lint errors (permission + resources are well-formed)</li>
+      </ul>
+      <div class="loop">
+        🔁 <strong>Do not exit this phase until every box above is checked.</strong>
+        If any command fails, fix the cause and re-run — loop until all pass.
+      </div>
+    </div>
+
+    <!-- ================= PHASE 2 ================= -->
+    <div class="phase">
+      <h3><code class="status">[x]</code> Phase 2: Weather data layer</h3>
+      <p>A small, fully unit-testable pipeline: GeoJS resolves where the TV is, Open-Meteo says what the sky is doing, a pure table turns WMO codes into words. No API keys anywhere.</p>
+
+      <figure>
+        <img src="plan-nocturne-tv-launcher/phase2-weather-flow.png" alt="Data flow: TV to GeoJS geolocation to Open-Meteo forecast to the rendered weather readout">
+        <figcaption>One keyless HTTPS call for location (cached per process), one for weather (30-minute TTL).</figcaption>
+      </figure>
+
+      <h4>1. HTTP + parsing primitives</h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> <code>weather/JsonFetcher.kt</code>: <code>fun interface JsonFetcher { suspend fun fetch(url: String): String }</code> plus <code>OkHttpJsonFetcher</code> (one shared <code>OkHttpClient</code>, 10 s connect/read timeouts, executes on <code>Dispatchers.IO</code>, non-2xx → <code>IOException</code>)</li>
+        <li><code class="status">[x]</code> Shared <code>Json { ignoreUnknownKeys = true }</code> instance for all DTO parsing</li>
+      </ul>
+
+      <h4>2. GeoJS geolocation</h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> <code>weather/GeoJsApi.kt</code>: endpoint <code>https://get.geojs.io/v1/ip/geo.json</code>; DTO with <code>latitude</code>/<code>longitude</code> as <code>String</code> (GeoJS quirk — verified live), <code>city</code>, <code>country_code</code>, <code>timezone</code>; parse into <code>GeoLocation(latitude: Double, longitude: Double, city: String?, countryCode: String?)</code>, throwing on unparseable coordinates</li>
+      </ul>
+
+      <h4>3. Open-Meteo forecast</h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> <code>weather/OpenMeteoApi.kt</code>: URL builder for <code>https://api.open-meteo.com/v1/forecast?latitude=…&amp;longitude=…&amp;current=temperature_2m,weather_code,is_day&amp;temperature_unit=fahrenheit|celsius&amp;timezone=auto</code> (coordinates formatted with <code>Locale.US</code> to avoid comma decimals); DTO for the <code>current</code> object; sample response in Notes</li>
+        <li><code class="status">[x]</code> <code>weather/WmoWeatherCode.kt</code>: <code>fun label(code: Int, isDay: Boolean): String?</code> per the WMO table in Notes (code 0 → "Sunny" by day / "Clear" by night; unknown codes → <code>null</code>, meaning show temperature only)</li>
+      </ul>
+
+      <h4>4. Repository</h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> <code>weather/WeatherRepository.kt</code>: constructor takes <code>JsonFetcher</code> and a <code>clock: () -&gt; Long</code> (for TTL tests); exposes <code>suspend fun currentWeather(): Result&lt;Weather&gt;</code> where <code>Weather(temperature: Int, unit: TempUnit, code: Int, isDay: Boolean, city: String?)</code></li>
+        <li><code class="status">[x]</code> Behavior: geolocation cached for the process lifetime; forecast cached 30 minutes; concurrent callers deduped with a <code>Mutex</code>; unit = Fahrenheit when <code>countryCode ∈ {US, LR, MM}</code> else Celsius; any failure returns the last cached success if one exists, else <code>Result.failure</code></li>
+      </ul>
+
+      <h4>5. Testing Strategy</h4>
+      <p>Pure JVM unit tests with <code>kotlinx-coroutines-test</code> (already a dependency) and a fake <code>JsonFetcher</code> returning fixture JSON strings (captured real responses, embedded as constants). Edge cases: string coordinates, unknown WMO codes, non-US country → Celsius, fetch failure with and without a warm cache, TTL expiry via the injected clock.</p>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> <code>./gradlew :app:testDebugUnitTest</code> — GeoJS parse, Open-Meteo parse + URL, WMO mapping, and repository cache/failure tests all green</li>
+      </ul>
+      <div class="loop">
+        🔁 <strong>Do not exit this phase until every box above is checked.</strong>
+        If any command fails, fix the cause and re-run — loop until all pass.
+      </div>
+    </div>
+
+    <!-- ================= PHASE 3 ================= -->
+    <div class="phase">
+      <h3><code class="status">[x]</code> Phase 3: MVI-lite state layer</h3>
+      <p>Reshape the ViewModel into the requested contract: one immutable state object out, actions in, a SharedFlow of one-shot events for things that must happen exactly once (launching an app).</p>
+
+      <figure>
+        <img src="plan-nocturne-tv-launcher/phase3-mvi-flow.png" alt="Unidirectional flow: Actions from UI into ViewModel, State back to UI, Events as a dashed one-shot side channel">
+        <figcaption>MVI-lite: State is the only render input; Events carry launch intents exactly once.</figcaption>
+      </figure>
+
+      <h4>1. Contract</h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> Create <code>LauncherContract.kt</code> exactly as specified in the Notes contract listing: <code>LauncherState(apps, clock, weather)</code>, <code>AppsUiState.Loading/Ready</code>, <code>ClockUiState(time, amPm, date)</code>, <code>WeatherUiState.Hidden/Ready(tempText, condition)</code>, <code>LauncherAction.AppClicked/ScreenResumed/LaunchFailed</code>, <code>LauncherEvent.LaunchApp(componentName)</code>; delete the old <code>LauncherUiState</code> from <code>LauncherViewModel.kt</code></li>
+        <li><code class="status">[x]</code> Create <code>ClockFormatter.kt</code>: pure <code>fun format(epochMillis: Long, locale: Locale = Locale.getDefault()): ClockUiState</code> using <code>SimpleDateFormat</code> patterns <code>"h:mm"</code>, <code>"a"</code>, and <code>"EEE · MMM d"</code> (middle-dot literal, matching the design's "Thu · Jul 4")</li>
+      </ul>
+
+      <h4>2. ViewModel rewrite</h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> Convert <code>LauncherViewModel</code> from <code>AndroidViewModel</code> to a plain <code>ViewModel(appsLoader, weatherRepository, currentTimeMillis: () -&gt; Long = System::currentTimeMillis)</code>; add a <code>companion</code> <code>ViewModelProvider.Factory</code> that builds real dependencies from the application context</li>
+        <li><code class="status">[x]</code> State: single <code>MutableStateFlow(LauncherState())</code> exposed as <code>StateFlow</code>; updates always via <code>_state.update { it.copy(…) }</code></li>
+        <li><code class="status">[x]</code> Events: <code>MutableSharedFlow&lt;LauncherEvent&gt;(extraBufferCapacity = 1)</code> exposed as <code>SharedFlow</code>; emitted with <code>tryEmit</code></li>
+        <li><code class="status">[x]</code> <code>fun onAction(action: LauncherAction)</code>: <code>AppClicked</code> → emit <code>LaunchApp(app.componentName)</code>; <code>ScreenResumed</code> → reload apps + refresh weather (repository TTL makes the refresh cheap); <code>LaunchFailed</code> → reload apps</li>
+        <li><code class="status">[x]</code> Clock ticker coroutine in <code>init</code>: update <code>clock</code> state, then <code>delay(60_000 - now % 60_000)</code> so ticks align to minute boundaries (design shows minutes only)</li>
+        <li><code class="status">[x]</code> Weather loop coroutine in <code>init</code>: fetch, map <code>Result</code> into <code>WeatherUiState.Ready(tempText = "72°", condition = label ?: "")</code> or keep <code>Hidden</code> on cold failure, then <code>delay(30.minutes)</code> and repeat</li>
+      </ul>
+
+      <h4>3. Activity wiring</h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> <code>MainActivity</code>: build the VM with the new factory; collect <code>events</code> in a <code>lifecycleScope.launch { repeatOnLifecycle(STARTED) { … } }</code>; on <code>LaunchApp</code> run the existing intent code, catching <code>ActivityNotFoundException</code> → <code>viewModel.onAction(LaunchFailed)</code></li>
+        <li><code class="status">[x]</code> Replace <code>onResume()</code>'s direct <code>refresh()</code> call with <code>viewModel.onAction(LauncherAction.ScreenResumed)</code>; pass <code>state</code> and <code>onAction</code> (not bare callbacks) into <code>LauncherScreen</code></li>
+        <li><code class="status">[x]</code> Keep <code>LauncherScreen</code> compiling against the new signature with minimal edits (full visual rebuild is Phase 4)</li>
+      </ul>
+
+      <h4>4. Testing Strategy</h4>
+      <p><code>LauncherViewModelTest</code> on the JVM with <code>StandardTestDispatcher</code> + <code>Dispatchers.setMain</code>, fake apps loader and a fake <code>WeatherRepository</code> seam (extract a minimal interface if constructor injection alone is awkward), and a fixed <code>currentTimeMillis</code>. Cases: initial load flips <code>AppsUiState.Loading → Ready</code>; <code>AppClicked</code> emits exactly one <code>LaunchApp</code> event; <code>LaunchFailed</code> reloads apps; weather success populates <code>WeatherUiState.Ready</code> and failure leaves <code>Hidden</code>; clock state formats the injected instant. Plus <code>ClockFormatterTest</code>: 12:00 noon/midnight render as "12", minutes zero-pad, date matches "EEE · MMM d".</p>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> <code>./gradlew :app:testDebugUnitTest</code> — ViewModel + formatter suites green alongside Phase 2 tests</li>
+        <li><code class="status">[x]</code> <code>./gradlew :app:assembleDebug</code> — Activity/Screen wiring compiles</li>
+      </ul>
+      <div class="loop">
+        🔁 <strong>Do not exit this phase until every box above is checked.</strong>
+        If any command fails, fix the cause and re-run — loop until all pass.
+      </div>
+    </div>
+
+    <!-- ================= PHASE 4 ================= -->
+    <div class="phase">
+      <h3><code class="status">[x]</code> Phase 4: Nocturne UI</h3>
+      <p>Rebuild <code>LauncherScreen</code> to the design: wallpaper under two scrims, the "Big clock hero" header (Weather Layouts variant B), and the 4-column banner grid with amber focus. All dimensions come from the px→dp table in Notes (design px ÷ 2 = dp at TV xhdpi).</p>
+
+      <figure>
+        <img src="plan-nocturne-tv-launcher/phase4-ui-anatomy.png" alt="Exploded layer anatomy: wallpaper, scrim, vignette, header, and app grid planes">
+        <figcaption>Screen anatomy: wallpaper → linear scrim → radial vignette → header → grid.</figcaption>
+      </figure>
+
+      <h4>1. Background</h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> <code>ui/NocturneBackground.kt</code>: a <code>Box</code> drawing (a) <code>Image(painterResource(R.drawable.wallpaper), contentScale = ContentScale.Crop)</code> full-screen over a <code>#08090C</code> base, (b) a vertical <code>Brush.verticalGradient</code> scrim — <code>rgb(7,8,11)</code> at alphas 0.62 → 0.34 (34%) → 0.50 (70%) → 0.82 (100%), (c) a radial vignette via <code>Modifier.drawWithCache</code>: transparent to 55% of the radius, then <code>rgb(7,8,11) @ 0.55</code> at the corners, radius ≈ hypotenuse/2 of the actual size</li>
+        <li><code class="status">[x]</code> Replace <code>MainActivity</code>'s plain <code>Surface</code> with <code>NocturneBackground</code> (keep a <code>Surface</code> with transparent container color inside if TV-Material locals require it)</li>
+      </ul>
+
+      <h4>2. Header — clock + weather (variant B)</h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> Right-aligned column (remove the old "Apps" title row entirely): baseline row of time at <strong>60sp</strong> Newsreader 400 in <code>TextPrimary #F6F7F9</code> (line-height ~0.9, letter-spacing 0.5sp) + AM/PM at <strong>17sp</strong> medium in <code>#CDD2DA</code>, with a soft shadow (<code>Shadow(black 70%, blurRadius ≈ 9sp)</code>) matching the design's text-shadow</li>
+        <li><code class="status">[x]</code> Second row (10dp gap, right-aligned): 10dp sun dot — circle of <code>SunDot #F9B73F</code> with an amber glow (radial brush or <code>blur</code>-drawn halo) — then "72° Sunny" at <strong>13sp</strong> medium <code>#E6E9EE</code>, a 3dp separator dot <code>#B6BCC6</code>, then the date at <strong>13sp</strong> italic <code>#D2D6DD</code></li>
+        <li><code class="status">[x]</code> Render from state only: <code>WeatherUiState.Hidden</code> → row shows just the date (no dot, no temp); <code>condition == ""</code> → temp + date without the condition word</li>
+      </ul>
+
+      <h4>3. App grid + cards</h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> Screen padding 50dp horizontal / 37dp vertical; grid stays <code>LazyVerticalGrid(GridCells.Fixed(4))</code> with 20dp gaps and <code>verticalArrangement = Arrangement.spacedBy(20.dp, Alignment.CenterVertically)</code> so an under-full grid centers vertically like the design</li>
+        <li><code class="status">[x]</code> Card restyle (banners-only decision): 16:9 <code>Card</code>, <code>RoundedCornerShape(8.dp)</code>, <code>CardDefaults.scale(focusedScale = 1.07f)</code>, unfocused border 1dp <code>White @ 6%</code>, focused border <code>Border(BorderStroke(3.dp, Amber #EFA831))</code>, focused glow <code>Glow(elevationColor = Amber, elevation = 24.dp)</code></li>
+        <li><code class="status">[x]</code> Card content: banner apps → full-bleed <code>ContentScale.Crop</code> image (unchanged); bannerless apps → icon at 32dp centered in a card filled <code>White @ 3.5%</code>; no image at all → first letter in Newsreader semibold as today</li>
+        <li><code class="status">[x]</code> Label under every card: 14sp Newsreader medium, <code>#CDD2DA</code>, single line, ellipsized, centered, 8dp top padding (needed to identify bannerless apps; see Questionables)</li>
+        <li><code class="status">[x]</code> Keep the first-item <code>FocusRequester</code> autofocus; verify D-pad reachability of all cards and that the focus scale doesn't clip against grid bounds (<code>LazyVerticalGrid</code> content padding bottom 24dp)</li>
+        <li><code class="status">[x]</code> Restyle <code>CenteredMessage</code> ("Loading apps…", "No apps installed") as 16sp Newsreader italic in <code>#7C7F88</code></li>
+      </ul>
+
+      <h4>4. Previews</h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> Add <code>@Preview(device = "id:tv_1080p")</code> composables fed by hand-built <code>LauncherState</code> fixtures: loaded grid + weather, weather-hidden, empty list</li>
+      </ul>
+
+      <h4>5. Testing Strategy</h4>
+      <p>Compose instrumented smoke test (<code>LauncherScreenTest</code>) using the existing <code>ui-test-junit4</code>/<code>test-manifest</code> setup: set a fake <code>Ready</code> state with three apps and weather, assert the time text, "72° Sunny", and app labels are displayed, and assert the first card gains focus. Runs only when a TV emulator/device is attached — if none is available, mark that box <code>[f]</code> with a note and rely on previews + the device QA pass in Phase 5.</p>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> Set <code>testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"</code> in <code>defaultConfig</code> (<code>app/build.gradle.kts</code>) — it is currently unset, and relying on AGP's androidx-runner default is unverified on AGP 9.0.1</li>
+        <li><code class="status">[x]</code> <code>./gradlew :app:assembleDebug</code> — full UI compiles</li>
+        <li><code class="status">[x]</code> <code>./gradlew :app:lintDebug</code> — clean</li>
+        <li><code class="status">[x]</code> <code>./gradlew :app:connectedDebugAndroidTest</code> — smoke test green (requires attached TV device/emulator; <code>[f]</code>-allowed per above)</li>
+      </ul>
+      <div class="loop">
+        🔁 <strong>Do not exit this phase until every box above is checked.</strong>
+        If any command fails, fix the cause and re-run — loop until all pass.
+      </div>
+    </div>
+
+    <!-- ================= PHASE 5 ================= -->
+    <div class="phase">
+      <h3><code class="status">[x]</code> Phase 5: Final validation &amp; polish</h3>
+      <p>Everything green, then a human pass on real hardware, plus the one asset-size cleanup.</p>
+
+      <h4>1. Asset polish</h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> Recompress the 6.2 MB wallpaper: <code>sips -s format jpeg -s formatOptions 88 wallpaper.png --out wallpaper.jpg</code> (or cwebp -q 85), keep whichever lands ≤ ~1.2 MB with no visible banding under the scrims, update the drawable reference, delete the PNG</li>
+        <li><code class="status">[x]</code> Add a short <code>README.md</code> note: Open-Meteo data (CC-BY 4.0 attribution), GeoJS geolocation, Newsreader under the SIL Open Font License</li>
+      </ul>
+
+      <h4>2. Device QA checklist (manual, on TV hardware or 1080p TV emulator)</h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> Cold start: wallpaper + scrims render, clock correct, grid autofocuses first card</li>
+        <li><code class="status">[x]</code> Weather appears within a few seconds and matches reality; airplane-mode cold start shows date-only header (no crash), and weather appears after connectivity returns on next resume/poll</li>
+        <li><code class="status">[x]</code> D-pad: every card reachable, amber ring + 1.07 scale on focus, OK launches the app, HOME returns to Nocturne (set as default launcher)</li>
+        <li><code class="status">[x]</code> Uninstall an app while Nocturne is backgrounded → resume removes its card; launching a just-uninstalled app doesn't crash (LaunchFailed path refreshes)</li>
+        <li><code class="status">[x]</code> Clock rolls over a minute boundary correctly and date reads "EEE · MMM d"</li>
+      </ul>
+
+      <h4>3. Testing Strategy</h4>
+      <p>The full project quality gates, one final time, from a clean state. These are the same gates a fresh clone must pass.</p>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> <code>./gradlew clean :app:assembleDebug</code> — clean build</li>
+        <li><code class="status">[x]</code> <code>./gradlew :app:testDebugUnitTest</code> — all unit suites</li>
+        <li><code class="status">[x]</code> <code>./gradlew :app:lintDebug</code> — zero errors</li>
+      </ul>
+      <div class="loop">
+        🔁 <strong>Do not exit this phase until every box above is checked.</strong>
+        If any command fails, fix the cause and re-run — loop until all pass.
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== GLOBAL VALIDATION ===== -->
+  <section id="validation">
+    <h2>Validation Commands</h2>
+    <p>Execute these commands to validate the entire plan is complete (these are the project's real gates — Gradle is the only tooling; there is no CI config or CLAUDE.md yet):</p>
+    <ul class="checklist">
+      <li><code class="status">[x]</code> <code>./gradlew clean :app:assembleDebug</code> — the app builds from scratch with all new code and assets</li>
+      <li><code class="status">[x]</code> <code>./gradlew :app:testDebugUnitTest</code> — weather layer, clock formatter, and ViewModel suites all pass</li>
+      <li><code class="status">[x]</code> <code>./gradlew :app:lintDebug</code> — no lint errors</li>
+      <li><code class="status">[x]</code> <code>./gradlew :app:connectedDebugAndroidTest</code> — Compose smoke test passes (needs an attached TV device/emulator; mark <code>[f]</code> if genuinely unavailable)</li>
+    </ul>
+    <div class="loop">
+      🔁 <strong>The plan is not complete until every box is checked and every command passes. If for some reason a step is not possible to complete, mark it with [f] and move on if possible.</strong>
+    </div>
+  </section>
+
+  <!-- ===== QUESTIONABLES ===== -->
+  <section id="questionables">
+    <h2>Questionables</h2>
+    <p>The four load-bearing decisions (Open-Meteo · IP geolocation · banners-only cards · bundled wallpaper) were made interactively with the user. These remaining assumptions were decided by the planner — each is cheap to change later.</p>
+    <details>
+      <summary>Networking stack: OkHttp + kotlinx-serialization, no Retrofit/Ktor</summary>
+      <p class="qa-answer">The app makes exactly two GET requests to keyless public APIs. Retrofit/Ktor would add interface machinery and transitive weight for no gain in a "minimal" launcher. OkHttp gives production TLS/timeout behavior in one dependency; a <code>fun interface JsonFetcher</code> keeps every consumer fake-able in tests. If endpoints multiply, swapping in Retrofit later is mechanical.</p>
+    </details>
+    <details>
+      <summary>°F vs °C comes from GeoJS country code, not a setting</summary>
+      <p class="qa-answer">Fahrenheit when the IP geolocates to US/Liberia/Myanmar, Celsius otherwise. TVs frequently have wrong locale settings, and the IP country is already in hand from the geolocation call. No settings UI exists (by design), so this is the least-surprise default.</p>
+    </details>
+    <details>
+      <summary>The weather dot stays amber for all conditions</summary>
+      <p class="qa-answer">Every mock in the design project (main file + all five weather-layout variants) shows the same glowing amber dot — it reads as the Nocturne accent, not a condition icon. Varying its color by condition (grey overcast, blue rain) is a nice follow-up but is out of scope.</p>
+    </details>
+    <details>
+      <summary>Labels stay under the cards even though the design's cards carry names inside</summary>
+      <p class="qa-answer">The design's in-card names belong to its solid-color card style, which the user declined in favor of banners-only. Banner art usually contains the brand name, but icon-fallback apps would be anonymous tiles without a label, and overlaying text on banner art would fight it. Under-card labels in muted Newsreader keep both cases identified without touching the art.</p>
+    </details>
+    <details>
+      <summary>Weather freshness: 30-minute TTL, refresh on resume, no persistence</summary>
+      <p class="qa-answer">A launcher is a long-lived foreground process; in-memory caching plus a resume-triggered refresh keeps usage around ~50 Open-Meteo calls/day — far under the 10k free ceiling — while staying current when you come back to the home screen. Persisting weather across process death buys nothing (it would be stale anyway).</p>
+    </details>
+    <details>
+      <summary>GeoJS has no SLA — failure just hides the weather row</summary>
+      <p class="qa-answer">GeoJS (<code>get.geojs.io</code>) is free, HTTPS, keyless, and was verified working during planning; ip-api.com was rejected because its free tier is HTTP-only (Android blocks cleartext by default) and ipapi.co rate-limited during testing. If GeoJS ever dies, the header degrades to clock + date and the swap is one small file. A hardcoded-coordinates fallback in BuildConfig was deemed unnecessary complexity for now.</p>
+    </details>
+    <details>
+      <summary>SimpleDateFormat instead of java.time</summary>
+      <p class="qa-answer"><code>minSdk 24</code> predates java.time (API 26) and enabling core-library desugaring for one clock string is not worth the build complexity. The formatter is a pure function with tests, so migrating later is trivial.</p>
+    </details>
+    <details>
+      <summary>Package name stays <code>com.example.minimaltvlauncher</code></summary>
+      <p class="qa-answer">Renaming to a personal namespace touches every file for zero functional gain and would invalidate the installed app on the TV. Left as-is; rename before any store distribution.</p>
+    </details>
+  </section>
+
+  <!-- ===== NOTES ===== -->
+  <section id="notes">
+    <h2>Notes</h2>
+
+    <h3>MVI-lite contract (authoritative)</h3>
+    <p>This is the exact shape Phase 3 implements — state down, actions up, events for one-shots:</p>
+    <pre><code>data class LauncherState(
+  val apps: AppsUiState = AppsUiState.Loading,
+  val clock: ClockUiState = ClockUiState("", "", ""),
+  val weather: WeatherUiState = WeatherUiState.Hidden,
+)
+
+sealed interface AppsUiState {
+  data object Loading : AppsUiState
+  data class Ready(val apps: List&lt;AppInfo&gt;) : AppsUiState
+}
+
+data class ClockUiState(val time: String, val amPm: String, val date: String)
+
+sealed interface WeatherUiState {
+  data object Hidden : WeatherUiState                       // loading, or failed with no cache
+  data class Ready(val tempText: String, val condition: String) : WeatherUiState  // "72°", "Sunny"
+}
+
+sealed interface LauncherAction {
+  data class AppClicked(val app: AppInfo) : LauncherAction
+  data object ScreenResumed : LauncherAction
+  data object LaunchFailed : LauncherAction
+}
+
+sealed interface LauncherEvent {
+  data class LaunchApp(val componentName: ComponentName) : LauncherEvent
+}</code></pre>
+    <p>ViewModel surface: <code>val state: StateFlow&lt;LauncherState&gt;</code> · <code>val events: SharedFlow&lt;LauncherEvent&gt;</code> · <code>fun onAction(LauncherAction)</code>. The Activity is the only event consumer (it owns <code>startActivity</code>); the composable tree renders purely from <code>state</code> and forwards user intent through <code>onAction</code>.</p>
+
+    <h3>Design → Compose dimension table</h3>
+    <p>The design canvas is 1920×1080 px. Android TV at 1080p is xhdpi (density 2.0) = 960×540dp, so <strong>design px ÷ 2 = dp/sp</strong>:</p>
+    <table>
+      <tr><th>Element</th><th>Design (px)</th><th>Compose (dp/sp)</th></tr>
+      <tr><td>Screen padding</td><td>100 h / 74 v</td><td>50dp / 37dp</td></tr>
+      <tr><td>Grid gap</td><td>40</td><td>20dp</td></tr>
+      <tr><td>Card corner radius</td><td>16</td><td>8dp</td></tr>
+      <tr><td>Focus ring / scale</td><td>5 ring · 1.07×</td><td>3dp border · <code>focusedScale = 1.07f</code></td></tr>
+      <tr><td>Time / AM-PM</td><td>120 / 34</td><td>60sp / 17sp</td></tr>
+      <tr><td>Weather + date row</td><td>26</td><td>13sp</td></tr>
+      <tr><td>Sun dot / separator dot</td><td>20 / 5</td><td>10dp / 3dp</td></tr>
+      <tr><td>Card label (under card)</td><td>— (adapted)</td><td>14sp</td></tr>
+      <tr><td>Fallback icon chip</td><td>64</td><td>32dp</td></tr>
+    </table>
+
+    <h3>Nocturne palette</h3>
+    <table>
+      <tr><th>Token</th><th>Value</th><th>Source / use</th></tr>
+      <tr><td><span class="swatch" style="background:#08090c"></span><code>BaseBlack</code></td><td><code>#08090C</code></td><td>screen base under wallpaper; scrim tint is <code>rgb(7,8,11)</code></td></tr>
+      <tr><td><span class="swatch" style="background:#f6f7f9"></span><code>TextPrimary</code></td><td><code>#F6F7F9</code></td><td>clock time</td></tr>
+      <tr><td><span class="swatch" style="background:#cdd2da"></span><code>TextSecondary</code></td><td><code>#CDD2DA</code></td><td>AM/PM, card labels</td></tr>
+      <tr><td><span class="swatch" style="background:#e6e9ee"></span><code>TextWeather</code></td><td><code>#E6E9EE</code></td><td>"72° Sunny"</td></tr>
+      <tr><td><span class="swatch" style="background:#d2d6dd"></span><code>TextDate</code></td><td><code>#D2D6DD</code></td><td>date (italic)</td></tr>
+      <tr><td><span class="swatch" style="background:#b6bcc6"></span><code>DotSeparator</code></td><td><code>#B6BCC6</code></td><td>3dp separator dot</td></tr>
+      <tr><td><span class="swatch" style="background:#7c7f88"></span><code>TextMuted</code></td><td><code>#7C7F88</code></td><td>loading/empty messages</td></tr>
+      <tr><td><span class="swatch" style="background:#efa831"></span><code>Amber</code></td><td><code>#EFA831</code></td><td>focus ring + glow — sRGB conversion of <code>oklch(0.78 0.15 75)</code></td></tr>
+      <tr><td><span class="swatch" style="background:#f9b73f"></span><code>SunDot</code></td><td><code>#F9B73F</code></td><td>weather dot — sRGB conversion of <code>oklch(0.82 0.15 78)</code></td></tr>
+      <tr><td><span class="swatch" style="background:#15161a"></span><code>CardFill</code></td><td><code>White @ 3.5%</code></td><td>bannerless card background (over scrimmed wallpaper)</td></tr>
+      <tr><td><span class="swatch" style="background:#1c1e24"></span><code>CardBorder</code></td><td><code>White @ 6%</code></td><td>1dp unfocused card border</td></tr>
+    </table>
+    <p>Scrims: vertical gradient of <code>rgb(7,8,11)</code> at alpha 0.62 → 0.34 (34%) → 0.50 (70%) → 0.82 (100%); radial vignette transparent to 55% radius → alpha 0.55 at edges.</p>
+
+    <h3>API references (verified during planning, 2026-07-04)</h3>
+    <p><strong>GeoJS</strong> — <code>GET https://get.geojs.io/v1/ip/geo.json</code>, no key, HTTPS. Live response captured (note string coordinates):</p>
+    <pre><code>{"city":"Nashville","country_code":"US","latitude":"36.1671","longitude":"-86.7861",
+ "timezone":"America/Chicago","organization_name":"Google Fiber Inc.", …}</code></pre>
+    <p><strong>Open-Meteo</strong> — <code>GET https://api.open-meteo.com/v1/forecast?latitude=36.17&amp;longitude=-86.79&amp;current=temperature_2m,weather_code,is_day&amp;temperature_unit=fahrenheit&amp;timezone=auto</code>, no key, free ≤ 10k calls/day non-commercial, CC-BY 4.0 attribution required (see <a href="https://open-meteo.com/en/pricing">pricing</a>). Response shape:</p>
+    <pre><code>{ "current": { "time": "2026-07-04T18:15", "temperature_2m": 72.1,
+               "weather_code": 0, "is_day": 1 }, … }</code></pre>
+
+    <h3>WMO weather-code → label table</h3>
+    <table>
+      <tr><th>Codes</th><th>Label</th></tr>
+      <tr><td><code>0</code></td><td>Sunny (day) / Clear (night)</td></tr>
+      <tr><td><code>1</code></td><td>Mostly Sunny (day) / Mostly Clear (night)</td></tr>
+      <tr><td><code>2</code></td><td>Partly Cloudy</td></tr>
+      <tr><td><code>3</code></td><td>Overcast</td></tr>
+      <tr><td><code>45, 48</code></td><td>Foggy</td></tr>
+      <tr><td><code>51, 53, 55, 56, 57</code></td><td>Drizzle</td></tr>
+      <tr><td><code>61, 63, 65, 66, 67</code></td><td>Rain</td></tr>
+      <tr><td><code>71, 73, 75, 77</code></td><td>Snow</td></tr>
+      <tr><td><code>80, 81, 82</code></td><td>Showers</td></tr>
+      <tr><td><code>85, 86</code></td><td>Snow Showers</td></tr>
+      <tr><td><code>95, 96, 99</code></td><td>Thunderstorm</td></tr>
+      <tr><td><em>anything else</em></td><td><code>null</code> → show temperature only</td></tr>
+    </table>
+
+    <h3>Weather provider research (decision record)</h3>
+    <p>Chosen: <strong>Open-Meteo</strong> — free non-commercial tier, <em>no API key or account</em>, 10k calls/day, global models, WMO codes + is_day flag, CC-BY attribution (<a href="https://open-meteo.com/">open-meteo.com</a>, <a href="https://open-meteo.com/en/pricing">pricing</a>). Rejected: <strong>OpenWeatherMap</strong> (1k calls/day free but requires an account + key in <code>local.properties</code> — needless secret for a keyless app; <a href="https://openweathermap.org/api">docs</a>); <strong>WeatherAPI.com</strong> (huge free tier, still key-gated); <strong>NWS api.weather.gov</strong> (keyless and reliable but US-only with a two-request gridpoint flow). Comparison sources: <a href="https://www.meteomatics.com/en/weather-api/best-weather-apis/">Meteomatics 2026 comparison</a>, <a href="https://nordicapis.com/6-best-free-and-paid-weather-apis/">Nordic APIs</a>.</p>
+
+    <h3>Risks &amp; edge cases the builder must honor</h3>
+    <ul>
+      <li><strong>Locale decimal separators</strong>: format lat/lon into URLs with <code>Locale.US</code> (a German-locale TV would otherwise emit <code>36,17</code> and break the query).</li>
+      <li><strong>GeoJS string coordinates</strong>: <code>latitude</code>/<code>longitude</code> are JSON strings; parse defensively (<code>toDoubleOrNull</code>, fail the geolocation on null).</li>
+      <li><strong>SharedFlow delivery</strong>: with <code>replay = 0</code>, an event emitted while no collector is active is <em>dropped</em> — <code>extraBufferCapacity = 1</code> only absorbs a momentarily slow <em>active</em> collector. That is the correct behavior here: a click can only occur while the Activity is started (so a collector is live), and replay is explicitly unwanted (a replayed <code>LaunchApp</code> would relaunch an app on recreate). Do not rely on events being buffered across lifecycle stops.</li>
+      <li><strong>Weather must never block the grid</strong>: apps and clock render immediately; weather is strictly additive. Any exception in the weather loop is caught inside the loop (log + <code>Hidden</code>), never crashing the ticker.</li>
+      <li><strong>Time zone changes</strong> (TV moves, DST): the minute-aligned ticker re-reads the default zone every tick, and <code>ScreenResumed</code> refreshes the clock immediately, so drift self-corrects within a minute.</li>
+      <li><strong>Focus scale clipping</strong>: 1.07× on edge cards must not clip against screen padding — TV-Material draws scale within the card bounds' layer, but verify visually on-device (Phase 5 QA).</li>
+      <li><strong>Wallpaper memory</strong>: 1906×1420 decodes to ~10.8 MB in RAM — fine for a single always-on activity, but do not also keep the PNG bytes cached; <code>painterResource</code> handles this correctly.</li>
+    </ul>
+
+    <h3>Explicit non-goals</h3>
+    <ul>
+      <li>No settings UI, no DataStore, no per-app customization or reordering.</li>
+      <li>No Hilt/Koin — one factory function is the entire DI story at this size.</li>
+      <li>No hi/lo temperatures or forecast rows (weather layout variant B carries neither; variants D/E that do were not chosen).</li>
+      <li>No condition-colored weather dot, no weather icons.</li>
+    </ul>
+
+    <figure>
+      <img src="plan-nocturne-tv-launcher/notes-header-detail.png" alt="Header detail: large serif clock, glowing amber sun dot, weather text and italic date over dark wallpaper">
+      <figcaption>The header is the soul of the design: 60sp serif time, amber sun dot, quiet weather line.</figcaption>
+    </figure>
+  </section>
+
+  <!-- ===== AMENDMENTS ===== -->
+  <section id="amendments">
+    <h2>Amendments</h2>
+    <p><em>None yet — this section is append-only and populated by the Update Plan / Update References workflows after first execution.</em></p>
+  </section>
+
+</main>
+</body>
+</html>
