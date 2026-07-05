@@ -22,19 +22,27 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.PlatformTextStyle
@@ -54,7 +62,9 @@ import androidx.tv.material3.Text
 import com.pavlovsfrog.minimaltvlauncher.theme.MinimalTvLauncherTheme
 import com.pavlovsfrog.minimaltvlauncher.theme.Newsreader
 import com.pavlovsfrog.minimaltvlauncher.theme.NocturneColors
+import com.pavlovsfrog.minimaltvlauncher.ui.AppActionMenu
 import com.pavlovsfrog.minimaltvlauncher.ui.NocturneBackground
+import kotlinx.coroutines.delay
 
 private const val COLUMNS = 4
 
@@ -110,6 +120,12 @@ fun LauncherScreen(
   onAction: (LauncherAction) -> Unit,
   modifier: Modifier = Modifier,
 ) {
+  // Written by tiles after layout, read by the overlay when it opens — never in composition,
+  // so plain maps (not snapshot state) are correct here.
+  val tileBounds = remember { HashMap<String, Rect>() }
+  val tileFocus = remember { HashMap<String, FocusRequester>() }
+  val homeApps = (state.apps as? AppsUiState.Ready)?.apps ?: emptyList()
+
   Box(modifier = modifier.fillMaxSize()) {
     when (val apps = state.apps) {
       AppsUiState.Loading -> MessageScreen(state.clock, state.weather, "Loading apps…")
@@ -121,6 +137,9 @@ fun LauncherScreen(
               weather = state.weather,
               apps = apps.apps,
               onAppClick = { onAction(LauncherAction.AppClicked(it)) },
+              onAppLongPress = { onAction(LauncherAction.AppLongPressed(it)) },
+              tileBounds = tileBounds,
+              tileFocus = tileFocus,
             )
           // Apps exist but every one is hidden — point at settings instead of "no apps".
           apps.allApps.isNotEmpty() ->
@@ -133,6 +152,17 @@ fun LauncherScreen(
           else -> MessageScreen(state.clock, state.weather, "No apps installed")
         }
     }
+
+    val overlay = state.overlay
+    if (overlay is Overlay.AppMenu) {
+      AppActionMenu(
+        app = overlay.app,
+        anchorBounds = tileBounds[overlay.app.packageName] ?: Rect.Zero,
+        onAction = onAction,
+      )
+    }
+
+    MenuFocusRestorer(overlay = overlay, homeApps = homeApps, tileFocus = tileFocus)
   }
 }
 
@@ -158,6 +188,38 @@ private fun MessageScreen(
         }
       }
     }
+  }
+}
+
+/**
+ * Returns focus to the grid when the action menu closes: to the pressed tile after Cancel/Back,
+ * or to the first remaining tile once a Hide reflow removes it. Re-keyed on [homeApps] because
+ * the hide write lands asynchronously, a recomposition after the overlay is already gone.
+ */
+@Composable
+private fun MenuFocusRestorer(
+  overlay: Overlay,
+  homeApps: List<AppInfo>,
+  tileFocus: Map<String, FocusRequester>,
+) {
+  var pendingFocus by remember { mutableStateOf<String?>(null) }
+
+  LaunchedEffect(overlay) {
+    if (overlay is Overlay.AppMenu) pendingFocus = overlay.app.packageName
+  }
+
+  LaunchedEffect(overlay, homeApps) {
+    val packageName = pendingFocus ?: return@LaunchedEffect
+    if (overlay != Overlay.None) return@LaunchedEffect
+    withFrameNanos {} // let a pending grid reflow settle before touching focus
+    val target =
+      if (homeApps.any { it.packageName == packageName }) packageName
+      else homeApps.firstOrNull()?.packageName
+    target?.let { runCatching { tileFocus[it]?.requestFocus() } }
+    // Keep watching briefly: the hide write may still be in flight. Then stop, so later
+    // unrelated list changes don't yank focus around.
+    delay(600)
+    pendingFocus = null
   }
 }
 
@@ -232,6 +294,9 @@ private fun AppGrid(
   weather: WeatherUiState,
   apps: List<AppInfo>,
   onAppClick: (AppInfo) -> Unit,
+  onAppLongPress: (AppInfo) -> Unit,
+  tileBounds: MutableMap<String, Rect>,
+  tileFocus: MutableMap<String, FocusRequester>,
 ) {
   val firstItemFocus = remember { FocusRequester() }
   // Move focus onto the first app so the remote can drive the grid immediately.
@@ -254,19 +319,38 @@ private fun AppGrid(
       NocturneHeader(clock = clock, weather = weather, modifier = Modifier.padding(bottom = 15.dp))
     }
     itemsIndexed(apps, key = { _, app -> app.componentName.flattenToString() }) { index, app ->
+      val focusRequester = remember { FocusRequester() }
+      DisposableEffect(app.packageName) {
+        tileFocus[app.packageName] = focusRequester
+        onDispose {
+          tileFocus.remove(app.packageName)
+          tileBounds.remove(app.packageName)
+        }
+      }
       AppCard(
         app = app,
         onClick = { onAppClick(app) },
-        modifier = if (index == 0) Modifier.focusRequester(firstItemFocus) else Modifier,
+        onLongClick = { onAppLongPress(app) },
+        modifier = Modifier
+          .animateItem()
+          .focusRequester(focusRequester)
+          .onGloballyPositioned { tileBounds[app.packageName] = it.boundsInRoot() }
+          .then(if (index == 0) Modifier.focusRequester(firstItemFocus) else Modifier),
       )
     }
   }
 }
 
 @Composable
-private fun AppCard(app: AppInfo, onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun AppCard(
+  app: AppInfo,
+  onClick: () -> Unit,
+  onLongClick: () -> Unit,
+  modifier: Modifier = Modifier,
+) {
   Card(
     onClick = onClick,
+    onLongClick = onLongClick,
     shape = CardDefaults.shape(shape = RoundedCornerShape(8.dp)),
     scale = CardDefaults.scale(focusedScale = 1.07f),
     border = CardDefaults.border(
@@ -283,34 +367,40 @@ private fun AppCard(app: AppInfo, onClick: () -> Unit, modifier: Modifier = Modi
     ),
     modifier = modifier.fillMaxWidth().aspectRatio(16f / 9f),
   ) {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-      val bitmap = app.image
-      if (bitmap != null) {
-        if (app.hasBanner) {
-          Image(
-            bitmap = bitmap.asImageBitmap(),
-            contentDescription = app.label,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize(),
-          )
-        } else {
-          // Square icon: keep it small and centered on the quiet card fill.
-          Image(
-            bitmap = bitmap.asImageBitmap(),
-            contentDescription = app.label,
-            contentScale = ContentScale.Fit,
-            modifier = Modifier.size(32.dp),
-          )
-        }
+    AppTileArt(app)
+  }
+}
+
+/** The tile's visual — banner, small icon, or letter fallback. Shared with the menu's ghost. */
+@Composable
+internal fun AppTileArt(app: AppInfo, modifier: Modifier = Modifier) {
+  Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    val bitmap = app.image
+    if (bitmap != null) {
+      if (app.hasBanner) {
+        Image(
+          bitmap = bitmap.asImageBitmap(),
+          contentDescription = app.label,
+          contentScale = ContentScale.Crop,
+          modifier = Modifier.fillMaxSize(),
+        )
       } else {
-        // No visible label under the card, so talkback needs the full name here.
-        Text(
-          text = app.label.take(1).uppercase(),
-          style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.SemiBold),
-          color = NocturneColors.TextSecondary,
-          modifier = Modifier.semantics { contentDescription = app.label },
+        // Square icon: keep it small and centered on the quiet card fill.
+        Image(
+          bitmap = bitmap.asImageBitmap(),
+          contentDescription = app.label,
+          contentScale = ContentScale.Fit,
+          modifier = Modifier.size(32.dp),
         )
       }
+    } else {
+      // No visible label under the card, so talkback needs the full name here.
+      Text(
+        text = app.label.take(1).uppercase(),
+        style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.SemiBold),
+        color = NocturneColors.TextSecondary,
+        modifier = Modifier.semantics { contentDescription = app.label },
+      )
     }
   }
 }

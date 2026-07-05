@@ -264,6 +264,69 @@ class LauncherViewModelTest {
   }
 
   @Test
+  fun `long-press opens the app menu overlay`() = runVmTest { viewModel ->
+    val cinema = appInfo("cinema")
+    loader.apps = listOf(cinema)
+    dispatcher.scheduler.runCurrent()
+
+    viewModel.onAction(LauncherAction.AppLongPressed(cinema))
+
+    assertEquals(Overlay.AppMenu(cinema), viewModel.state.value.overlay)
+  }
+
+  @Test
+  fun `HideApp persists the hide and closes the menu`() = runVmTest { viewModel ->
+    val cinema = appInfo("cinema")
+    loader.apps = listOf(cinema)
+    dispatcher.scheduler.runCurrent()
+    viewModel.onAction(LauncherAction.AppLongPressed(cinema))
+
+    viewModel.onAction(LauncherAction.HideApp(cinema))
+    dispatcher.scheduler.runCurrent()
+
+    assertEquals(Overlay.None, viewModel.state.value.overlay)
+    assertEquals(listOf(cinema.packageName to true), visibility.setHiddenCalls)
+    assertEquals(emptyList<AppInfo>(), (viewModel.state.value.apps as AppsUiState.Ready).apps)
+  }
+
+  @Test
+  fun `UninstallApp emits RequestUninstall and closes the menu`() = runVmTest { viewModel ->
+    val cinema = appInfo("cinema")
+    loader.apps = listOf(cinema)
+    dispatcher.scheduler.runCurrent()
+    viewModel.onAction(LauncherAction.AppLongPressed(cinema))
+
+    val events = mutableListOf<LauncherEvent>()
+    val collector = launch(UnconfinedTestDispatcher(testScheduler)) {
+      viewModel.events.toList(events)
+    }
+    viewModel.onAction(LauncherAction.UninstallApp(cinema))
+    dispatcher.scheduler.runCurrent()
+    collector.cancel()
+
+    assertEquals(Overlay.None, viewModel.state.value.overlay)
+    assertEquals(
+      listOf(LauncherEvent.RequestUninstall(cinema.packageName)),
+      events,
+    )
+  }
+
+  @Test
+  fun `MenuDismissed closes the menu without any writes`() = runVmTest { viewModel ->
+    val cinema = appInfo("cinema")
+    loader.apps = listOf(cinema)
+    dispatcher.scheduler.runCurrent()
+    viewModel.onAction(LauncherAction.AppLongPressed(cinema))
+
+    viewModel.onAction(LauncherAction.MenuDismissed)
+    dispatcher.scheduler.runCurrent()
+
+    assertEquals(Overlay.None, viewModel.state.value.overlay)
+    assertEquals(emptyList<Pair<String, Boolean>>(), visibility.setHiddenCalls)
+    assertEquals(listOf(cinema), (viewModel.state.value.apps as AppsUiState.Ready).apps)
+  }
+
+  @Test
   fun `ScreenResumed reloads apps and refreshes weather`() = runVmTest { viewModel ->
     dispatcher.scheduler.runCurrent()
     assertEquals(WeatherUiState.Hidden, viewModel.state.value.weather)

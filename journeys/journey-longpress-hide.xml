@@ -1,0 +1,33 @@
+<journey name="Long-press Hide">
+  <description>
+    Long-pressing a home tile shows the Hide/Uninstall/Cancel action row anchored to the tile;
+    Hide removes the tile with a grid reflow and the hide persists across an app relaunch.
+  </description>
+  <actions>
+    <action>
+      Launch the Nocturne launcher (com.pavlovsfrog.minimaltvlauncher) and verify the app grid
+      is shown with at least two app tiles.
+    </action>
+    <action>
+      Note the name of the first (focused) app tile, then long-press OK (KEYCODE_DPAD_CENTER
+      held for about a second) on it.
+    </action>
+    <action>
+      Verify a dimming scrim covers the screen and a three-item action row (Hide, Uninstall,
+      Cancel) appears near the pressed tile, with focus on Hide.
+    </action>
+    <action>
+      Press OK on Hide.
+    </action>
+    <action>
+      Verify the menu closes and the noted app tile is no longer present on the home grid,
+      with the remaining tiles reflowed to fill its place.
+    </action>
+    <action>
+      Force-stop and relaunch the launcher app.
+    </action>
+    <action>
+      Verify the hidden app is still absent from the home grid after the relaunch.
+    </action>
+  </actions>
+</journey>

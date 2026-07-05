@@ -39,4 +39,19 @@ object NocturneColors {
 
   /** 1dp unfocused card border. */
   val CardBorder = Color.White.copy(alpha = 0.06f)
+
+  /** Full-screen scrim behind the long-press action menu — rgba(5,6,9,0.55). */
+  val MenuScrim = Color(0xFF050609).copy(alpha = 0.55f)
+
+  /** Action-menu circle fill — rgba(20,21,27,0.92). */
+  val MenuCircle = Color(0xFF14151B).copy(alpha = 0.92f)
+
+  /** Focused action-menu circle fill. */
+  val MenuCircleFocused = Color(0xFFF4F4F5)
+
+  /** Glyph on a focused (light) action-menu circle. */
+  val MenuGlyphFocused = Color(0xFF101116)
+
+  /** Destructive glyph (Uninstall ✕). */
+  val DangerText = Color(0xFFFF9D97)
 }
