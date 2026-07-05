@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plan: Nocturne Favorites — Long-Press Menu &amp; All-Apps Settings</title>
+<style>
+  :root {
+    /* Nocturne visual identity — synced with specs/plan-nocturne-tv-launcher.html */
+    --bg: #0a0b0e;
+    --bg-raised: #12141a;
+    --bg-inset: #08090c;
+    --border: #23262e;
+    --border-soft: #1a1d24;
+    --text: #e8eaef;
+    --text-secondary: #cdd2da;
+    --text-muted: #7c7f88;
+    --accent: #efa831;          /* oklch(0.78 0.15 75) — amber focus ring */
+    --accent-soft: rgba(239, 168, 49, 0.12);
+    --accent-glow: #f9b73f;     /* oklch(0.82 0.15 78) — sun dot */
+    --ok: #7fb97a;
+    --danger: #c96a5c;
+    --serif: 'Newsreader', Georgia, 'Times New Roman', serif;
+    --mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--serif);
+    font-size: 17px;
+    line-height: 1.65;
+  }
+  main { max-width: 960px; margin: 0 auto; padding: 56px 32px 140px; }
+  h1 { font-size: 40px; font-weight: 600; line-height: 1.15; margin: 0 0 12px; letter-spacing: 0.2px; }
+  h2 {
+    font-size: 27px; font-weight: 600; margin: 64px 0 16px;
+    padding-bottom: 10px; border-bottom: 1px solid var(--border);
+  }
+  h3 { font-size: 21px; font-weight: 600; margin: 36px 0 10px; }
+  h4 { font-size: 17.5px; font-weight: 600; margin: 28px 0 8px; color: var(--text-secondary); }
+  p { margin: 0 0 14px; }
+  a { color: var(--accent); }
+  em { color: var(--text-secondary); }
+  code {
+    font-family: var(--mono); font-size: 0.82em;
+    background: var(--bg-raised); border: 1px solid var(--border-soft);
+    border-radius: 5px; padding: 1.5px 6px; color: var(--text-secondary);
+  }
+  pre {
+    background: var(--bg-inset); border: 1px solid var(--border-soft); border-radius: 10px;
+    padding: 16px 18px; overflow-x: auto; line-height: 1.5; margin: 14px 0 20px;
+  }
+  pre code { background: none; border: none; padding: 0; font-size: 13px; color: var(--text-secondary); }
+  ul { padding-left: 26px; margin: 0 0 16px; }
+  li { margin: 5px 0; }
+  table { border-collapse: collapse; width: 100%; margin: 14px 0 22px; font-size: 15px; }
+  th, td { border: 1px solid var(--border-soft); padding: 8px 12px; text-align: left; }
+  th { background: var(--bg-raised); font-weight: 600; color: var(--text-secondary); }
+  td code { font-size: 12.5px; }
+  header .meta { margin: 18px 0 4px; }
+  details {
+    background: var(--bg-raised); border: 1px solid var(--border-soft);
+    border-radius: 10px; padding: 12px 18px; margin: 12px 0;
+  }
+  details summary { cursor: pointer; font-weight: 600; color: var(--text-secondary); }
+  details[open] summary { margin-bottom: 10px; }
+  dl { display: grid; grid-template-columns: 130px 1fr; gap: 6px 18px; margin: 8px 0; font-size: 14.5px; }
+  dt { color: var(--text-muted); font-style: italic; }
+  dd { margin: 0; font-family: var(--mono); font-size: 12.5px; word-break: break-all; align-self: center; }
+  .subtitle { font-style: italic; color: var(--text-muted); font-size: 18px; margin-bottom: 6px; }
+  .tag {
+    display: inline-block; font-family: var(--mono); font-size: 11px; font-weight: 600;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    border-radius: 5px; padding: 2px 8px; margin-right: 6px; vertical-align: 1px;
+  }
+  .tag.existing { background: rgba(127, 185, 122, 0.12); color: var(--ok); border: 1px solid rgba(127,185,122,0.3); }
+  .tag.new { background: var(--accent-soft); color: var(--accent); border: 1px solid rgba(239,168,49,0.35); }
+  .files li { margin: 8px 0; }
+  .phase {
+    background: var(--bg-raised); border: 1px solid var(--border);
+    border-radius: 16px; padding: 26px 30px 22px; margin: 26px 0;
+  }
+  .phase > h3 { margin-top: 0; }
+  .status {
+    background: var(--bg-inset); color: var(--accent); border: 1px solid var(--border);
+    min-width: 34px; display: inline-block; text-align: center;
+  }
+  .checklist { list-style: none; padding-left: 6px; }
+  .checklist li { margin: 9px 0; padding-left: 2px; }
+  .loop {
+    background: var(--accent-soft); border: 1px solid rgba(239,168,49,0.35);
+    border-radius: 10px; padding: 14px 18px; margin: 20px 0 4px;
+    font-size: 15.5px; color: var(--text-secondary);
+  }
+  .qa-answer { color: var(--text-secondary); font-size: 15.5px; margin: 4px 0 2px; }
+  .callout {
+    border-left: 3px solid var(--accent); background: var(--bg-raised);
+    border-radius: 0 10px 10px 0; padding: 12px 18px; margin: 16px 0; font-size: 15.5px;
+  }
+</style>
+</head>
+<body>
+<main>
+
+  <!-- ===== HEADER + UPDATABLE METADATA ===== -->
+  <header>
+    <h1>Plan: Nocturne Favorites — Long-Press Menu &amp; All-Apps Settings</h1>
+    <p class="subtitle">Hide/uninstall via long-press action row · gear-opened all-apps list with star toggles · SQLDelight persistence · Hilt DI · shipped as a Graphite stack</p>
+    <details class="meta">
+      <summary>Metadata</summary>
+      <dl>
+        <dt>created</dt>      <dd>2026-07-05T17:31:48-0500</dd>
+        <dt>modified</dt>     <dd>2026-07-05T17:31:48-0500</dd>
+        <dt>commits</dt>      <dd>e876cf9</dd>
+        <dt>branches</dt>     <dd>settings-rework</dd>
+        <dt>agent name</dt>   <dd>Claude Fable 5 (claude-fable-5)</dd>
+        <dt>session id</dt>   <dd>0581eddf (background job)</dd>
+        <dt>back refs</dt>    <dd>claude.ai/design project 50077339-6d83-4127-8716-f956abd14bd2 (design_handoff_tv_launcher_favorites/README.md — option 2c is the spec; screenshots 01-2c…04-2c), specs/plan-nocturne-tv-launcher.html (built the launcher this plan extends)</dd>
+        <dt>forward refs</dt> <dd>—</dd>
+      </dl>
+    </details>
+  </header>
+
+  <!-- ===== PURPOSE / PROBLEM / SOLUTION ===== -->
+  <section id="purpose">
+    <h2>Purpose</h2>
+    <p>Give Nocturne its curation layer, exactly as specified by design handoff <strong>option 2c</strong>: the home grid becomes a <em>favorites-only</em> surface; a <strong>long-press</strong> on any tile raises an anchored action row (<em>Hide · Uninstall · Cancel</em>); a <strong>gear button (top-left)</strong> opens a full-screen two-column list of <em>all</em> installed apps where each row's star toggles home visibility. Hidden state persists across restarts in a <strong>SQLDelight</strong> database; newly installed apps default to visible. The growth in wiring (database, repositories, ViewModel seams) is absorbed by introducing <strong>Hilt</strong>. The work ships as a five-PR <strong>Graphite stack</strong> — the user's first — so the plan doubles as a stacked-diff walkthrough.</p>
+  </section>
+
+  <section id="problem">
+    <h2>Problem</h2>
+    <p>Today the launcher shows every launchable app, unconditionally. There is no way to remove clutter (hide an app) or uninstall from the launcher, no settings surface at all, and no persistence layer to remember such choices. Architecturally, dependencies are hand-wired in <code>LauncherViewModel.Factory</code>; adding a database plus two new UI surfaces on that pattern would tangle construction logic further. Finally, the developer works on this repo through a headless remote session: the HTML spec itself needs a way to be <em>seen</em> (solved: published as a claude.ai Artifact — see Notes).</p>
+  </section>
+
+  <section id="solution">
+    <h2>Solution</h2>
+    <p>Five stacked phases, one Graphite branch/PR each. <strong>Phase&nbsp;0</strong> sets up the stack and lands this spec as the base PR. <strong>Phase&nbsp;1</strong> converts construction to Hilt (no behavior change). <strong>Phase&nbsp;2</strong> adds SQLDelight with a single <code>hiddenApp</code> table — favorite&nbsp;=&nbsp;absent from the table, so new installs are visible by definition — exposed as a <code>Flow&lt;Set&lt;String&gt;&gt;</code> and combined into <code>LauncherState</code>. <strong>Phase&nbsp;3</strong> builds the long-press action row: an overlay state machine in the ViewModel (<code>Overlay.AppMenu</code>), a scrim + anchored three-button row in Compose, Hide writing to the database with an animated grid reflow, and Uninstall firing the platform <code>ACTION_DELETE</code> intent (the system owns the confirmation dialog — we never build one). <strong>Phase&nbsp;4</strong> restructures the header to gear-left/clock-right and adds the full-screen two-column all-apps list with star toggles. Logic is verified with JVM unit tests; UI behavior is verified with <strong>journeys</strong> on a TV emulator (never Compose/Espresso tests, per CLAUDE.md convention).</p>
+    <pre><code>main (trunk)
+└─ settings-rework          PR 1  docs: this spec (stack base)
+   └─ hilt-di               PR 2  Hilt foundation, no behavior change
+      └─ sqldelight-visibility  PR 3  hiddenApp table + repository + state derivation
+         └─ longpress-menu      PR 4  scrim + action row, Hide/Uninstall/Cancel
+            └─ all-apps-settings PR 5  gear button + two-column star list</code></pre>
+  </section>
+
+  <!-- ===== RELEVANT FILES ===== -->
+  <section id="files" class="files">
+    <h2>Relevant Files</h2>
+    <p>Single-module app, package <code>com.pavlovsfrog.minimaltvlauncher</code>. Kotlin sources live under <code>app/src/main/java/com/pavlovsfrog/minimaltvlauncher/</code> (abbreviated <code>…/</code> below).</p>
+
+    <h3>Existing Files</h3>
+    <ul>
+      <li><span class="tag existing">existing</span> <code>gradle/libs.versions.toml</code> — add Hilt + KSP (Phase 1), SQLDelight (Phase 2) versions/plugins/libraries</li>
+      <li><span class="tag existing">existing</span> <code>build.gradle.kts</code> (root) — register the new plugins with <code>apply false</code></li>
+      <li><span class="tag existing">existing</span> <code>app/build.gradle.kts</code> — apply Hilt/KSP/SQLDelight plugins, dependencies, <code>sqldelight {}</code> database block</li>
+      <li><span class="tag existing">existing</span> <code>app/src/main/AndroidManifest.xml</code> — <code>android:name=".NocturneApplication"</code> (Phase 1); <code>REQUEST_DELETE_PACKAGES</code> permission (Phase 3)</li>
+      <li><span class="tag existing">existing</span> <code>…/MainActivity.kt</code> — <code>@AndroidEntryPoint</code>, drop the manual factory (Phase 1); handle <code>RequestUninstall</code> event with <code>ACTION_DELETE</code> (Phase 3)</li>
+      <li><span class="tag existing">existing</span> <code>…/LauncherViewModel.kt</code> — <code>@HiltViewModel</code> (Phase 1); combine hidden-set flow into state + prune (Phase 2); overlay state machine actions (Phases 3–4)</li>
+      <li><span class="tag existing">existing</span> <code>…/LauncherContract.kt</code> — <code>AppEntry</code>, <code>Overlay</code> sealed interface, new actions/events (Phases 2–4)</li>
+      <li><span class="tag existing">existing</span> <code>…/LauncherScreen.kt</code> — grid renders favorites + <code>animateItem()</code> reflow, long-press overlay host (Phase 3); header restructure gear-left/clock-right, settings overlay host (Phase 4)</li>
+      <li><span class="tag existing">existing</span> <code>…/AppsRepository.kt</code> — <code>@Inject constructor(@ApplicationContext …)</code> (Phase 1); otherwise unchanged</li>
+      <li><span class="tag existing">existing</span> <code>…/AppInfo.kt</code> — unchanged (packageName already present for keying)</li>
+      <li><span class="tag existing">existing</span> <code>…/theme/NocturneColors.kt</code> — add scrim, overlay-surface, menu-circle, danger-text, star-disabled, row-focus colors</li>
+      <li><span class="tag existing">existing</span> <code>app/src/test/java/…/LauncherViewModelTest.kt</code> — extend for visibility derivation + overlay state machine</li>
+    </ul>
+
+    <h3>New Files</h3>
+    <ul>
+      <li><span class="tag new">new</span> <code>…/NocturneApplication.kt</code> — <code>@HiltAndroidApp</code> application class</li>
+      <li><span class="tag new">new</span> <code>…/di/AppModule.kt</code> — binds <code>AppsLoader</code>, <code>WeatherProvider</code>, <code>JsonFetcher</code>, <code>TimeSource</code></li>
+      <li><span class="tag new">new</span> <code>…/di/DatabaseModule.kt</code> — provides <code>SqlDriver</code> / <code>LauncherDatabase</code> / <code>VisibilityRepository</code> singletons (Phase 2)</li>
+      <li><span class="tag new">new</span> <code>…/TimeSource.kt</code> — <code>fun interface TimeSource { fun nowMillis(): Long }</code> (replaces the injected <code>() -&gt; Long</code>, which Dagger can't bind cleanly)</li>
+      <li><span class="tag new">new</span> <code>app/src/main/sqldelight/com/pavlovsfrog/minimaltvlauncher/db/HiddenApp.sq</code> — table + queries (selectAll / hide / show / prune)</li>
+      <li><span class="tag new">new</span> <code>…/data/VisibilityRepository.kt</code> — interface + SQLDelight impl: <code>hiddenPackages(): Flow&lt;Set&lt;String&gt;&gt;</code>, <code>setHidden(pkg, hidden)</code>, <code>prune(installed)</code></li>
+      <li><span class="tag new">new</span> <code>…/ui/AppActionMenu.kt</code> — scrim, lifted-tile ghost, anchored Hide/Uninstall/Cancel action row (Phase 3)</li>
+      <li><span class="tag new">new</span> <code>…/ui/AllAppsSettings.kt</code> — full-screen two-column all-apps list with star toggles (Phase 4)</li>
+      <li><span class="tag new">new</span> <code>app/src/test/java/…/data/VisibilityRepositoryTest.kt</code> — JVM tests on an in-memory <code>JdbcSqliteDriver</code></li>
+      <li><span class="tag new">new</span> <code>journeys/journey-longpress-hide.xml</code> — long-press → Hide → tile gone → survives restart</li>
+      <li><span class="tag new">new</span> <code>journeys/journey-longpress-uninstall-cancel.xml</code> — Uninstall → system dialog appears → Cancel → unchanged; menu Cancel/Back paths</li>
+      <li><span class="tag new">new</span> <code>journeys/journey-settings-toggle.xml</code> — gear → unstar → home reflects → restar → restored</li>
+      <li><span class="tag new">new</span> <code>specs/plan-favorites-longpress-settings.html</code> — this document (committed in Phase 0)</li>
+    </ul>
+  </section>
+
+  <!-- ===== IMPLEMENTATION PHASES ===== -->
+  <section id="phases">
+    <h2>Implementation Phases</h2>
+    <p><strong>IMPORTANT:</strong> Execute every phase and task step by step, in order, top to bottom.</p>
+    <p>Status markers: <code>[]</code> idle · <code>[wip]</code> in progress · <code>[x]</code> complete · <code>[f]</code> failed. All start as <code>[]</code>; the Build Plan workflow updates them as it works.</p>
+    <p class="callout">Graphite discipline for every phase: do the work on the current branch tip, then <code>gt create &lt;branch&gt; -am "&lt;message&gt;"</code> to cut the phase's branch with its commit, and <code>gt submit --stack --no-interactive -d</code> to push draft PRs. Never run bare <code>gt create/modify/submit/sync</code> (they open interactive prompts). Review feedback on an earlier PR: <code>gt checkout &lt;branch&gt;</code> → edit → <code>gt modify -a -m "…"</code> (auto-restacks descendants) → <code>gt submit --stack --no-interactive -u</code>.</p>
+
+    <div class="phase">
+      <h3><code class="status">[wip]</code> Phase 0: Graphite stack base — track the branch, land the spec</h3>
+      <p>Turn <code>settings-rework</code> (currently untracked by <code>gt</code>, sitting exactly at <code>main</code>) into the base branch of the stack, carrying only this spec. That gives a browsable PR anchor for the whole stack and teaches the first <code>gt</code> loop with a zero-risk change. Note: <code>main</code> is checked out in the sibling worktree (<code>minimal-launcher</code>), so never try to check out <code>main</code> here — <code>gt</code> operations that rebase other branches still work.</p>
+
+      <h4>0.1. Track and commit</h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> <code>gt track settings-rework --parent main</code> — registers the branch in the stack with trunk as parent</li>
+        <li><code class="status">[x]</code> <code>git add specs/plan-favorites-longpress-settings.html &amp;&amp; git commit -m "docs: add favorites/long-press/settings plan spec"</code> (plain git is fine for the commit itself; the branch is now gt-tracked). Do NOT use <code>gt modify</code> here — the branch tip equals <code>main</code>'s tip and modify would amend a trunk commit</li>
+        <li><code class="status">[x]</code> Verify auth before submitting: <code>gt submit --stack --no-interactive --dry-run</code>; if it reports "No auth token set", stop and ask the user to run <code>gt auth --token &lt;token&gt;</code> (token from app.graphite.com/settings/cli) — do not fall back to <code>git push</code></li>
+        <li><code class="status">[x]</code> <code>gt submit --no-interactive -d</code> — creates draft PR 1 (spec only)</li>
+        <li><code class="status">[x]</code> Add the claude.ai Artifact URL of this spec to the PR body: <code>gh pr edit &lt;num&gt; --body "…rendered spec: &lt;artifact-url&gt;…"</code> (GitHub does not render committed HTML; the artifact is the viewable copy)</li>
+      </ul>
+
+      <h4>0.2. Testing Strategy</h4>
+      <p>Pure repo-state verification — no app code changed, so no gradle/emulator gates. Prove the stack skeleton is what the diagram says.</p>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> <code>gt log short</code> — shows <code>settings-rework</code> stacked on <code>main</code> (alongside the unrelated <code>scroll-fix</code> branch)</li>
+        <li><code class="status">[x]</code> <code>gh pr view --json url,isDraft,baseRefName</code> — PR 1 exists, draft, based on <code>main</code></li>
+      </ul>
+      <div class="loop">
+        🔁 <strong>Do not exit this phase until every box above is checked.</strong>
+        If any command fails, fix the cause and re-run — loop until all pass.
+      </div>
+    </div>
+
+    <div class="phase">
+      <h3><code class="status">[]</code> Phase 1: Hilt DI foundation (branch <code>hilt-di</code>, PR 2)</h3>
+      <p>Replace the hand-rolled <code>viewModelFactory</code> with Hilt. Strictly a construction refactor: zero behavior change, all existing unit tests must pass untouched (they already constructor-inject fakes). The one contract tweak: Dagger can't inject a defaulted <code>() -&gt; Long</code> parameter, so the clock seam becomes <code>fun interface TimeSource</code> (tests keep passing lambdas via SAM conversion).</p>
+
+      <h4>1.1. Gradle wiring</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> <code>libs.versions.toml</code>: add <code>hilt</code> (latest stable ≥ 2.57 — resolve on Maven Central; must declare AGP 9 support) and <code>ksp</code> (release matching Kotlin 2.3.20 from github.com/google/ksp/releases); plugins <code>com.google.dagger.hilt.android</code> + <code>com.google.devtools.ksp</code>; libraries <code>hilt-android</code> + <code>hilt-compiler</code></li>
+        <li><code class="status">[]</code> Root <code>build.gradle.kts</code>: register both plugins <code>apply false</code>; <code>app/build.gradle.kts</code>: apply both, add <code>implementation(libs.hilt.android)</code> + <code>ksp(libs.hilt.compiler)</code></li>
+        <li><code class="status">[]</code> Sync/compile check: <code>./gradlew :app:assembleDebug</code>. If the Hilt Gradle plugin fails against AGP 9.2.1, bump Hilt to the newest release before considering anything else (see Questionables)</li>
+      </ul>
+
+      <h4>1.2. Annotate and modularize</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> New <code>NocturneApplication</code> with <code>@HiltAndroidApp</code>; manifest <code>&lt;application android:name=".NocturneApplication" …&gt;</code></li>
+        <li><code class="status">[]</code> New <code>TimeSource.kt</code> (<code>fun interface</code>, production impl <code>System.currentTimeMillis()</code>); switch <code>LauncherViewModel</code>'s third constructor param from <code>() -&gt; Long</code> to <code>TimeSource</code> and update <code>LauncherViewModelTest</code> call sites (lambda syntax unchanged thanks to SAM)</li>
+        <li><code class="status">[]</code> <code>AppsRepository</code>: <code>@Inject constructor(@ApplicationContext context: Context)</code>; <code>OkHttpJsonFetcher</code> + <code>WeatherRepository</code>: add <code>@Inject constructor</code> as needed</li>
+        <li><code class="status">[]</code> New <code>di/AppModule.kt</code>: <code>@Binds</code> <code>AppsRepository → AppsLoader</code>, <code>WeatherRepository → WeatherProvider</code>, <code>OkHttpJsonFetcher → JsonFetcher</code>; <code>@Provides</code> <code>TimeSource</code>; all <code>@Singleton</code> in <code>SingletonComponent</code></li>
+        <li><code class="status">[]</code> <code>LauncherViewModel</code>: <code>@HiltViewModel class … @Inject constructor(…)</code>; delete the <code>Factory</code> val from the companion object (keep <code>TAG</code>); <code>MainActivity</code>: <code>@AndroidEntryPoint</code>, plain <code>by viewModels()</code></li>
+      </ul>
+
+      <h4>1.3. Testing Strategy</h4>
+      <p>Gradle quality gates plus a live boot check on the TV emulator (a DI refactor's classic failure mode is a runtime crash at injection, invisible to unit tests). No new UI tests — journeys convention.</p>
+      <ul class="checklist">
+        <li><code class="status">[]</code> <code>./gradlew :app:assembleDebug</code> — Hilt codegen + bytecode transform succeed under AGP 9.2.1</li>
+        <li><code class="status">[]</code> <code>./gradlew :app:testDebugUnitTest</code> — all existing tests green with the <code>TimeSource</code> rename, no other edits</li>
+        <li><code class="status">[]</code> <code>./gradlew :app:lintDebug</code> — clean</li>
+        <li><code class="status">[]</code> <code>android emulator start &lt;tv-avd&gt;</code> + <code>android run</code> + <code>android screen capture</code> — launcher boots and renders the grid (no <code>@AndroidEntryPoint</code>/missing-binding crash)</li>
+        <li><code class="status">[]</code> <code>gt create hilt-di -am "refactor: introduce Hilt DI (no behavior change)"</code> then <code>gt submit --stack --no-interactive -d</code> — PR 2 up</li>
+      </ul>
+      <div class="loop">
+        🔁 <strong>Do not exit this phase until every box above is checked.</strong>
+        If any command fails, fix the cause and re-run — loop until all pass.
+      </div>
+    </div>
+
+    <div class="phase">
+      <h3><code class="status">[]</code> Phase 2: SQLDelight visibility store (branch <code>sqldelight-visibility</code>, PR 3)</h3>
+      <p>Persistence with the smallest possible schema: a <code>hiddenApp</code> table holding only hidden package names. Favorite = not in the table, which makes "newly installed apps default to shown" a structural guarantee rather than a code path. The ViewModel combines installed apps × hidden set into state; rows for packages that are no longer installed are pruned on every reload (so uninstall → reinstall lands visible, like a fresh install). No UI change yet beyond home silently filtering (the table is empty until Phase 3 ships a way to hide).</p>
+
+      <h4>2.1. Gradle + schema</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> <code>libs.versions.toml</code>: <code>sqldelight</code> (latest stable 2.x from Maven Central); plugin <code>app.cash.sqldelight</code>; libraries <code>android-driver</code>, <code>coroutines-extensions</code>, and <code>sqlite-driver</code> (testImplementation)</li>
+        <li><code class="status">[]</code> Root + app gradle: apply plugin; <code>sqldelight { databases { create("LauncherDatabase") { packageName.set("com.pavlovsfrog.minimaltvlauncher.db") } } }</code></li>
+        <li><code class="status">[]</code> <code>HiddenApp.sq</code>: <code>CREATE TABLE hiddenApp (packageName TEXT NOT NULL PRIMARY KEY);</code> with labeled queries <code>selectAll</code>, <code>hide</code> (<code>INSERT OR IGNORE</code>), <code>show</code> (<code>DELETE … WHERE packageName = ?</code>), <code>prune</code> (<code>DELETE … WHERE packageName NOT IN ?</code>)</li>
+      </ul>
+
+      <h4>2.2. Repository + DI</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> <code>data/VisibilityRepository.kt</code>: interface (<code>hiddenPackages(): Flow&lt;Set&lt;String&gt;&gt;</code>, <code>suspend setHidden(packageName, hidden)</code>, <code>suspend prune(installed: Collection&lt;String&gt;)</code>) + <code>SqlDelightVisibilityRepository</code> using <code>asFlow().mapToList(Dispatchers.IO)</code> mapped to a <code>Set</code>; writes on <code>Dispatchers.IO</code></li>
+        <li><code class="status">[]</code> <code>di/DatabaseModule.kt</code>: <code>@Provides @Singleton</code> <code>AndroidSqliteDriver(LauncherDatabase.Schema, context, "launcher.db")</code> → <code>LauncherDatabase</code> → repository binding</li>
+      </ul>
+
+      <h4>2.3. State derivation</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> <code>LauncherContract</code>: add <code>data class AppEntry(val app: AppInfo, val isFavorite: Boolean)</code>; <code>AppsUiState.Ready</code> gains <code>allApps: List&lt;AppEntry&gt;</code> alongside the home list (home = <code>allApps.filter { it.isFavorite }.map { it.app }</code>, precomputed in the VM so composables stay dumb)</li>
+        <li><code class="status">[]</code> <code>LauncherViewModel</code>: inject <code>VisibilityRepository</code>; rework <code>reloadApps()</code> into a <code>combine(installedAppsFlow, visibilityRepository.hiddenPackages())</code> collector so DB toggles update state without a reload; call <code>prune(installed.map { it.packageName })</code> after each <code>loadApps()</code></li>
+        <li><code class="status">[]</code> Home empty state: when all apps are hidden (but some are installed), show the design's "No favorites on this screen" + "Open Settings (⚙) to star the apps you want here" copy in <code>LauncherScreen</code> (distinct from "No apps installed")</li>
+      </ul>
+
+      <h4>2.4. Testing Strategy</h4>
+      <p>Pure JVM coverage: SQLDelight runs on an in-memory <code>JdbcSqliteDriver</code> (no emulator, no Robolectric), ViewModel tests use a fake <code>VisibilityRepository</code> backed by a <code>MutableStateFlow</code>.</p>
+      <ul class="checklist">
+        <li><code class="status">[]</code> <code>VisibilityRepositoryTest</code>: hide/show round-trip; hide is idempotent; <code>prune</code> drops only uninstalled packages; flow emits on every write — <code>./gradlew :app:testDebugUnitTest</code></li>
+        <li><code class="status">[]</code> <code>LauncherViewModelTest</code>: hidden set filters home list; unknown (newly installed) package defaults to favorite; hidden-set change mid-session updates state without <code>ScreenResumed</code>; all-hidden yields empty home but full <code>allApps</code> — same gradle gate</li>
+        <li><code class="status">[]</code> <code>./gradlew :app:assembleDebug</code> — SQLDelight codegen compiles under AGP 9.2.1</li>
+        <li><code class="status">[]</code> <code>./gradlew :app:lintDebug</code> — clean</li>
+        <li><code class="status">[]</code> <code>gt create sqldelight-visibility -am "feat: persist hidden apps in SQLDelight, derive favorites-only home state"</code> then <code>gt submit --stack --no-interactive -d</code> — PR 3 up</li>
+      </ul>
+      <div class="loop">
+        🔁 <strong>Do not exit this phase until every box above is checked.</strong>
+        If any command fails, fix the cause and re-run — loop until all pass.
+      </div>
+    </div>
+
+    <div class="phase">
+      <h3><code class="status">[]</code> Phase 3: Long-press action row — Hide / Uninstall / Cancel (branch <code>longpress-menu</code>, PR 4)</h3>
+      <p>The anchored menu from design §2. The ViewModel owns a tiny overlay state machine; Compose renders scrim + a ghost of the pressed tile + the three-button row, anchored below the tile (flipping above when it would clip the bottom edge). Uninstall fires the <em>platform</em> flow — <code>Intent.ACTION_DELETE</code> with a <code>package:</code> URI — and the OS shows its own confirmation; the launcher must NOT build one (design §3 is explicit; the prototype dialog is a labeled mock). All design px halve to dp/sp (1080p TV = xhdpi 2.0, the convention already used throughout <code>LauncherScreen.kt</code>).</p>
+
+      <h4>3.1. Contract + ViewModel</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> <code>LauncherContract</code>: <code>sealed interface Overlay { data object None; data class AppMenu(val app: AppInfo); data object Settings }</code> on <code>LauncherState</code> (Settings variant lands here, used in Phase 4); actions <code>AppLongPressed(app)</code>, <code>MenuDismissed</code>, <code>HideApp(app)</code>, <code>UninstallApp(app)</code>; event <code>RequestUninstall(packageName)</code></li>
+        <li><code class="status">[]</code> <code>LauncherViewModel</code>: long-press opens the menu; <code>HideApp</code> → <code>setHidden(pkg, true)</code> + overlay None (grid updates via the Phase 2 combine); <code>UninstallApp</code> → emit <code>RequestUninstall</code> + overlay None; <code>MenuDismissed</code> → None; <code>ScreenResumed</code> already reloads+prunes, which absorbs the post-system-dialog return in both outcomes</li>
+        <li><code class="status">[]</code> <code>MainActivity</code>: on <code>RequestUninstall</code>, <code>startActivity(Intent(Intent.ACTION_DELETE, "package:$pkg".toUri()))</code>; manifest gains <code>&lt;uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES"/&gt;</code> (normal permission, required for the package-URI delete flow on API 26+)</li>
+      </ul>
+
+      <h4>3.2. Overlay UI (<code>ui/AppActionMenu.kt</code>)</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> <code>AppCard</code>: add <code>onLongClick</code> (tv-material3 <code>Card</code> supports it) dispatching <code>AppLongPressed</code>; record each tile's root-coordinate bounds via <code>onGloballyPositioned</code> so the overlay can anchor</li>
+        <li><code class="status">[]</code> Scrim: full-screen <code>rgba(5,6,9,0.55)</code>, fade-in 180ms, clickable → <code>MenuDismissed</code>; ghost duplicate of the pressed tile drawn at its captured bounds above the scrim with the amber ring + lifted shadow</li>
+        <li><code class="status">[]</code> Action row: 3 items (Hide ⊘ · Uninstall ✕ · Cancel ‹), circle 33dp / glyph 13sp / item width 48dp / gap 10dp / label 9sp, colors per design §2 (Uninstall glyph <code>#ff9d97</code>; focused circle <code>#f4f4f5</code> with amber ring); centered under the tile 9dp below; flip above when it would pass the bottom edge; clamp ≥12dp from screen sides; entry = fade + 5dp rise, 160ms</li>
+        <li><code class="status">[]</code> Focus &amp; keys: on open, <code>FocusRequester</code> onto Hide; left/right moves within the row, no wrap; <code>BackHandler</code> + Cancel + scrim click all dispatch <code>MenuDismissed</code>; on dismiss, restore focus to the originating tile; guard OK auto-repeat (ignore <code>onClick</code> until first key-up after the menu opens)</li>
+        <li><code class="status">[]</code> Grid reflow: <code>Modifier.animateItem()</code> on grid items (fade ~240ms) so Hide/uninstall removals animate and survivors slide into place; after hiding the last focusable tile, focus falls back to the first remaining tile (or the header when none remain)</li>
+      </ul>
+
+      <h4>3.3. Testing Strategy</h4>
+      <p>State machine covered by JVM tests; the focus/anchor/intent behavior — everything a unit test can't see — covered by two journeys evaluated on a TV emulator with real sideloaded apps, driven per the android-cli skill (D-pad via adb input, verification via <code>android layout</code> / <code>android screen capture</code>). Screenshots land in <code>specs/plan-favorites-longpress-settings/</code>.</p>
+      <ul class="checklist">
+        <li><code class="status">[]</code> <code>LauncherViewModelTest</code> additions: long-press→menu, hide→persist+close, uninstall→event+close, dismiss→no writes — <code>./gradlew :app:testDebugUnitTest</code></li>
+        <li><code class="status">[]</code> <code>./gradlew :app:assembleDebug :app:lintDebug</code> — build + lint clean</li>
+        <li><code class="status">[]</code> Evaluate <code>journeys/journey-longpress-hide.xml</code> on the TV emulator — long-press shows the row anchored to the tile; Hide removes the tile with reflow; relaunching the app keeps it hidden — all actions PASSED</li>
+        <li><code class="status">[]</code> Evaluate <code>journeys/journey-longpress-uninstall-cancel.xml</code> — Uninstall opens the <em>system</em> dialog (not launcher-drawn); Cancel returns with grid unchanged; menu Back/Cancel paths return focus to the pressed tile — all actions PASSED</li>
+        <li><code class="status">[]</code> <code>gt create longpress-menu -am "feat: long-press action row with hide/uninstall/cancel"</code> then <code>gt submit --stack --no-interactive -d</code> — PR 4 up</li>
+      </ul>
+      <div class="loop">
+        🔁 <strong>Do not exit this phase until every box above is checked.</strong>
+        If any command fails, fix the cause and re-run — loop until all pass.
+      </div>
+    </div>
+
+    <div class="phase">
+      <h3><code class="status">[]</code> Phase 4: Gear button + all-apps settings list (branch <code>all-apps-settings</code>, PR 5)</h3>
+      <p>Design §4: header becomes space-between (gear top-left, clock block top-right — clock styling untouched), and the gear opens a full-screen takeover listing every installed app in two columns, star = on home. Toggles persist immediately through <code>VisibilityRepository</code>; the home grid is already reactive to that flow, so returning simply reveals the result.</p>
+
+      <h4>4.1. Header gear</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Restructure <code>NocturneHeader</code> into a space-between <code>Row</code>: gear left (37dp circle, bg <code>rgba(14,15,20,0.55)</code>, border <code>rgba(255,255,255,0.14)</code>, ⚙ glyph 16sp <code>#e6e9ee</code>; focused: scale 1.08 + amber ring), existing clock/weather column right</li>
+        <li><code class="status">[]</code> Focus order: D-pad up from the grid's top row reaches the gear (verify default column-based focus; add <code>focusProperties { up }</code> only if needed); down from gear returns to the first tile; when home is empty, initial focus goes to the gear instead of the grid</li>
+        <li><code class="status">[]</code> Gear click → <code>OpenSettings</code> action → <code>Overlay.Settings</code></li>
+      </ul>
+
+      <h4>4.2. Settings surface (<code>ui/AllAppsSettings.kt</code>)</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Contract: actions <code>OpenSettings</code>, <code>CloseSettings</code>, <code>ToggleFavorite(packageName)</code>; VM: toggle flips via <code>setHidden(pkg, !currentlyHidden)</code>, no confirm; close → <code>Overlay.None</code></li>
+        <li><code class="status">[]</code> Surface: full-screen <code>rgba(8,9,12,0.97)</code>, fade-in 200ms, padding 32dp×55dp; header row: back pill ("‹ Back", 999-radius, hairline border), title "Apps" 17sp w600, subtitle "<em>{favCount} of {total} on home · press to star or unstar</em>" 10sp italic; omit the prototype's "Reset demo data" link</li>
+        <li><code class="status">[]</code> List: <code>LazyVerticalGrid(Fixed(2))</code>, gaps 4dp vertical × 32dp horizontal, fed from <code>allApps</code> (row-major = grid default); row: 25dp app chip (banner/icon or letter fallback, 6dp radius), name 13.5sp, star ★ (amber) / ☆ (<code>#5a5e68</code>); hidden rows dim chip to 42% and name to <code>#8a8e99</code>; focused row: bg <code>rgba(255,255,255,0.09)</code> + 1dp inset amber ring</li>
+        <li><code class="status">[]</code> Focus &amp; keys: on open, focus first row; D-pad left/right hops columns, up/down within, no wrap; OK toggles the star in place (focus stays on the row); <code>BackHandler</code> + back pill close; on close, focus the gear (home already reflects toggles; if favorites became empty, empty state + gear focus is the Phase 2/4.1 behavior)</li>
+        <li><code class="status">[]</code> Uninstalled-app hygiene: rows come from <code>allApps</code> (installed only), so uninstalled apps never appear — no extra work, but verify in the journey</li>
+      </ul>
+
+      <h4>4.3. Testing Strategy</h4>
+      <p>Toggle/count logic in JVM tests; the two-column focus walk, dimming, and persistence-across-return in a journey. Screenshots into <code>specs/plan-favorites-longpress-settings/</code>.</p>
+      <ul class="checklist">
+        <li><code class="status">[]</code> <code>LauncherViewModelTest</code> additions: OpenSettings/CloseSettings overlay transitions; ToggleFavorite flips hidden state and favCount; toggling while settings open leaves overlay open — <code>./gradlew :app:testDebugUnitTest</code></li>
+        <li><code class="status">[]</code> <code>./gradlew :app:assembleDebug :app:lintDebug</code> — build + lint clean</li>
+        <li><code class="status">[]</code> Evaluate <code>journeys/journey-settings-toggle.xml</code> on the TV emulator — gear opens the two-column list with correct "{n} of {m} on home" subtitle; unstar dims the row; Back → app gone from home; reopen + restar → app returns; kill + relaunch → state persisted — all actions PASSED</li>
+        <li><code class="status">[]</code> <code>gt create all-apps-settings -am "feat: gear-opened all-apps settings with favorite star toggles"</code> then <code>gt submit --stack --no-interactive -d</code> — PR 5 up, stack complete</li>
+      </ul>
+      <div class="loop">
+        🔁 <strong>Do not exit this phase until every box above is checked.</strong>
+        If any command fails, fix the cause and re-run — loop until all pass.
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== GLOBAL VALIDATION ===== -->
+  <section id="validation">
+    <h2>Validation Commands</h2>
+    <p>Execute these commands to validate the entire plan is complete (from the top of the stack, <code>all-apps-settings</code>):</p>
+    <ul class="checklist">
+      <li><code class="status">[]</code> <code>./gradlew :app:assembleDebug</code> — full build with Hilt + SQLDelight codegen</li>
+      <li><code class="status">[]</code> <code>./gradlew :app:testDebugUnitTest</code> — all JVM tests (existing + repository + state machine) green</li>
+      <li><code class="status">[]</code> <code>./gradlew :app:lintDebug</code> — lint clean</li>
+      <li><code class="status">[]</code> <code>./gradlew :app:connectedDebugAndroidTest</code> — the pre-existing instrumented smoke test still passes (default state shows all apps, so favorites filtering must not break it); TV emulator via <code>android emulator start</code></li>
+      <li><code class="status">[]</code> Re-evaluate all three journeys in <code>journeys/</code> back-to-back on one emulator session — all PASSED, screenshots refreshed in <code>specs/plan-favorites-longpress-settings/</code></li>
+      <li><code class="status">[]</code> <code>gt log short</code> — five tracked branches in the expected parent chain; <code>gt submit --stack --no-interactive -u</code> — every PR up to date; mark PRs ready-for-review with <code>gh pr ready</code> when the user says go</li>
+    </ul>
+    <div class="loop">
+      🔁 <strong>The plan is not complete until every box is checked and every command passes. If for some reason a step is not possible to complete, mark it with [f] and move on if possible.</strong>
+    </div>
+  </section>
+
+  <!-- ===== QUESTIONABLES ===== -->
+  <section id="questionables">
+    <h2>Questionables</h2>
+
+    <details>
+      <summary>Hilt on AGP 9.2.1 — compatibility is the plan's biggest external risk</summary>
+      <p class="qa-answer">This project uses AGP 9.2.1 with AGP's built-in Kotlin (no <code>kotlin-android</code> plugin). The Hilt Gradle plugin historically lagged AGP majors; recent Dagger releases declare AGP 9 support, but this must be proven by the Phase 1 <code>assembleDebug</code> gate before anything is stacked on top — which is exactly why Hilt is the bottom code PR. If the newest Hilt still fails: fallback A is Dagger-without-the-gradle-plugin (feasible but loses <code>@AndroidEntryPoint</code> bytecode transform ergonomics), fallback B is deferring DI to manual constructor wiring in <code>NocturneApplication</code> (a ~40-line composition root that keeps every other phase intact). The stack structure means only PR 2 would be swapped.</p>
+    </details>
+
+    <details>
+      <summary>Is SQLDelight + Hilt overkill for one set of package names?</summary>
+      <p class="qa-answer">Honestly: DataStore + manual wiring would cover today's feature in far less machinery. The user explicitly chose SQLDelight and Hilt as deliberate infrastructure investments for where the launcher is heading, so the plan honors that. The schema is kept to the minimum (one table, four queries) so the investment cost is mostly build wiring, which is exactly what the stacked PRs isolate. Assumption recorded; no action needed.</p>
+    </details>
+
+    <details>
+      <summary>Schema shape: hidden-set table vs. per-app row with a flag</summary>
+      <p class="qa-answer">Chosen: store <em>only hidden</em> package names. "New installs default to shown" then requires no insert-on-detect logic, no sync between PackageManager and DB, and favorite-count = installed − hidden. A per-app table with <code>isHidden</code> would need reconciliation on every package change for zero present benefit. If future features need per-app metadata (sort order, launch counts), a new table can join against package name without migrating this one.</p>
+    </details>
+
+    <details>
+      <summary>Reinstall semantics: pruning means uninstall→reinstall resets to visible</summary>
+      <p class="qa-answer">Pruning rows for uninstalled packages keeps the table honest and makes a reinstalled app behave like a new install (visible). The alternative — remembering hidden state across uninstall — seems user-hostile for a TV launcher (you reinstalled it, you presumably want to see it). Flagging because it's a one-line decision to flip: skip <code>prune()</code> and hidden state would survive reinstalls.</p>
+    </details>
+
+    <details>
+      <summary>Uninstall flow: <code>ACTION_DELETE</code> + <code>REQUEST_DELETE_PACKAGES</code>, result via onResume</summary>
+      <p class="qa-answer">The design mandates the platform dialog. <code>Intent.ACTION_DELETE</code> with a <code>package:</code> URI triggers it; on API 26+ that requires the normal (auto-granted) <code>REQUEST_DELETE_PACKAGES</code> permission. Rather than registering <code>ACTION_PACKAGE_REMOVED</code> receivers, the plan leans on the existing <code>ScreenResumed</code> reload: the system dialog necessarily pauses the launcher, so returning always re-queries PackageManager and prunes. Limitation: apps uninstalled by <em>other</em> means while the launcher stays foregrounded (rare on TV) only disappear on next resume — accepted for now.</p>
+    </details>
+
+    <details>
+      <summary>Long-press threshold: platform default instead of the design's configurable 300–1200ms</summary>
+      <p class="qa-answer">The design says 500ms, "tweakable 300–1200ms". Compose's <code>onLongClick</code> uses <code>ViewConfiguration</code>'s long-press timeout, which is ~500ms — matching the spec's default with zero custom gesture code and correct auto-repeat handling. The tweakability reads as a prototyping affordance, not a product setting; building a custom hold-detector to make it configurable isn't worth the gesture-correctness risk. Revisit only if QA finds TV remotes triggering accidental long-presses.</p>
+    </details>
+
+    <details>
+      <summary>Icons: unicode glyphs (⊘ ✕ ‹ ⚙ ★ ☆) instead of a material-icons dependency</summary>
+      <p class="qa-answer">The prototype itself uses unicode glyphs; the README says "replace with the product icon set", but this project has no icon set and minification is off, so <code>material-icons-extended</code> would be a heavy add for four glyphs. Newsreader may lack some of these codepoints — Android font fallback will render them from system fonts, which is visually acceptable at these sizes. If any glyph renders as tofu on the emulator, swap that one for a small hand-drawn <code>ImageVector</code>. Escalate to a proper icon dependency only if the user wants pixel-faithful visibility-off/delete icons.</p>
+    </details>
+
+    <details>
+      <summary>Settings as an in-Activity overlay, not a navigation destination</summary>
+      <p class="qa-answer">The design frames settings as a "full-screen takeover" of the same surface, and the app currently has zero navigation library. Modeling it as <code>Overlay.Settings</code> in the existing single-state contract keeps the MVI-lite shape, keeps TV focus management in one tree, and avoids adding Navigation3 for one destination. If a third screen ever appears, that's the moment to introduce real navigation.</p>
+    </details>
+
+    <details>
+      <summary>Stack base: reusing <code>settings-rework</code> as the spec PR</summary>
+      <p class="qa-answer">The branch already exists in this worktree, sits exactly at <code>main</code>, and its name matches the feature. Tracking it as the stack base (spec-only PR 1) avoids branch juggling in a worktree where <code>main</code> cannot be checked out. Cost: the PR is named after the branch, not <code>docs/…</code> — cosmetic. Alternative (fold the spec into the Hilt PR) rejected: a docs-only base PR is the gentlest first <code>gt</code> rep and gives reviewers the spec before the code.</p>
+    </details>
+
+    <details>
+      <summary>Parallel branch <code>scroll-fix</code> carries CLAUDE.md and its own spec</summary>
+      <p class="qa-answer">The unmerged <code>scroll-fix</code> branch contains the repo's CLAUDE.md (source of the journeys-only testing rule) plus a scroll change to <code>LauncherScreen.kt</code>. This stack does not depend on it, but whichever lands second will need a small <code>gt sync -f</code> restack, and <code>LauncherScreen.kt</code> edits may conflict textually. The testing convention is honored here regardless of where CLAUDE.md currently lives.</p>
+    </details>
+  </section>
+
+  <!-- ===== NOTES ===== -->
+  <section id="notes">
+    <h2>Notes</h2>
+
+    <h3>Viewing this spec from the remote machine (decided)</h3>
+    <p>The session runs headless, so "open the HTML in a browser" doesn't work locally. Resolution, in order of usefulness:</p>
+    <ul>
+      <li><strong>claude.ai Artifact (primary)</strong> — this spec is published as a private artifact on claude.ai; the agent redeploys it to the same URL whenever the plan changes (status markers, amendments). Viewable from any browser, no repo access needed. The URL is recorded in PR 1's body.</li>
+      <li><strong>Committed file (source of truth)</strong> — <code>specs/plan-favorites-longpress-settings.html</code> lands in PR 1. GitHub shows it as raw HTML (not rendered); after merge it can be opened from any checkout. The artifact is the <em>view</em>; the file is the <em>record</em>.</li>
+      <li>Rejected: CI-published GitHub Pages (infrastructure for one file), <code>htmlpreview.github.io</code> (third-party, flaky with private repos), scp/mount (the thing the user was trying to avoid).</li>
+    </ul>
+
+    <h3>Graphite primer for this stack (first-time reference)</h3>
+    <p>Mental model: <em>one branch = one PR = one reviewable idea</em>, each branch parented on the previous. <code>gt</code> keeps children rebased when parents change.</p>
+    <table>
+      <tr><th>Moment</th><th>Command</th><th>What it does</th></tr>
+      <tr><td>Finish a phase</td><td><code>gt create &lt;branch&gt; -am "msg"</code></td><td>New branch on top of current, committing all changes (stages untracked too)</td></tr>
+      <tr><td>Push/refresh PRs</td><td><code>gt submit --stack --no-interactive -d</code></td><td>Pushes every branch in the stack, opens draft PRs (<code>-u</code> = update-only later)</td></tr>
+      <tr><td>Fix review feedback on PR 2</td><td><code>gt checkout hilt-di</code> → edit → <code>gt modify -a -m "address review"</code></td><td>Amends that branch and auto-restacks PRs 3–5 on the new tip</td></tr>
+      <tr><td>Trunk moved / PR merged</td><td><code>gt sync -f</code></td><td>Pulls <code>main</code>, restacks everything, offers to delete merged branches</td></tr>
+      <tr><td>Rebase conflict</td><td>fix files → <code>git add .</code> → <code>gt continue</code></td><td>(or <code>gt abort</code>, or <code>gt undo</code> to reverse the last gt op)</td></tr>
+      <tr><td>Look around</td><td><code>gt log short</code> · <code>gt up</code>/<code>gt down</code></td><td>See the stack; walk between branches</td></tr>
+    </table>
+    <p>Rules of the road in this repo: every <code>gt</code> command gets <code>-m</code>/<code>--no-interactive</code>/<code>-q</code> flags (they're interactive by default and will hang a non-interactive session); <code>main</code> is checked out in the sibling worktree, so never <code>gt checkout main</code> here; PR submission requires Graphite auth (<code>gt auth --token …</code>) — never bypass with <code>git push</code>.</p>
+
+    <h3>Design-token → Compose mapping</h3>
+    <p>The repo's established convention: design canvas is 1920×1080 px, TV 1080p is xhdpi (density 2.0), so <strong>design px ÷ 2 = dp/sp</strong> (see the comment atop <code>LauncherScreen.kt</code>). Key values for the new surfaces:</p>
+    <table>
+      <tr><th>Token</th><th>Design (px)</th><th>Compose</th></tr>
+      <tr><td>Gear button / glyph</td><td>74 circle, 32 glyph</td><td>37dp circle, 16sp glyph</td></tr>
+      <tr><td>Menu circle / glyph / item / gap / label</td><td>66 / 26 / 96 / 20 / 17</td><td>33dp / 13sp / 48dp / 10dp / 9sp</td></tr>
+      <tr><td>Row offset below tile</td><td>18</td><td>9dp (flip above when clipping bottom; clamp 12dp from edges)</td></tr>
+      <tr><td>Settings padding / list gaps</td><td>64×110 / 8×64</td><td>32dp×55dp / 4dp×32dp</td></tr>
+      <tr><td>Settings chip / name / title / subtitle</td><td>50 / 27 / 34 / 19</td><td>25dp / 13.5sp / 17sp / 10sp</td></tr>
+      <tr><td>Scrim / settings surface</td><td colspan="2"><code>rgba(5,6,9,0.55)</code> / <code>rgba(8,9,12,0.97)</code> — add to <code>NocturneColors</code></td></tr>
+      <tr><td>Timings</td><td colspan="2">menu in 160–180ms · tile exit ~240ms (scale→0.78 + fade) · settings in 200ms · focus 220ms (existing)</td></tr>
+      <tr><td>New colors</td><td colspan="2">menu circle <code>rgba(20,21,27,0.92)</code> · focused circle <code>#f4f4f5</code> (glyph <code>#101116</code>) · danger <code>#ff9d97</code> · star off <code>#5a5e68</code> · row focus bg <code>rgba(255,255,255,0.09)</code> · dim name <code>#8a8e99</code></tr>
+    </table>
+
+    <h3>Dependencies added (resolve exact versions at implementation time)</h3>
+    <ul>
+      <li><code>com.google.dagger:hilt-android</code> + <code>hilt-compiler</code> via KSP, plugins <code>com.google.dagger.hilt.android</code> + <code>com.google.devtools.ksp</code> (KSP release must match Kotlin 2.3.20)</li>
+      <li><code>app.cash.sqldelight</code> plugin + <code>android-driver</code>, <code>coroutines-extensions</code>; <code>sqlite-driver</code> test-only (in-memory JVM tests)</li>
+      <li>No icon library, no navigation library, no DataStore — see Questionables for the reasoning</li>
+    </ul>
+
+    <h3>Out of scope / future work</h3>
+    <ul>
+      <li>Custom home ordering (drag-to-reorder favorites) — natural next table in the same database</li>
+      <li>Package add/remove broadcast receivers for live grid updates while foregrounded</li>
+      <li>"Restore defaults" affordance in settings (the prototype's "Reset demo data" slot)</li>
+      <li>Launching apps from the settings list (design specifies star-toggle only)</li>
+    </ul>
+  </section>
+
+  <!-- ===== AMENDMENTS ===== -->
+  <section id="amendments">
+    <h2>Amendments</h2>
+    <p><em>None yet — initial version.</em></p>
+  </section>
+
+</main>
+</body>
+</html>
