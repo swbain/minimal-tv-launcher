@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -109,27 +110,43 @@ fun LauncherScreen(
   onAction: (LauncherAction) -> Unit,
   modifier: Modifier = Modifier,
 ) {
-  Column(modifier = modifier.fillMaxSize().padding(horizontal = 50.dp, vertical = 37.dp)) {
-    NocturneHeader(clock = state.clock, weather = state.weather)
+  Box(modifier = modifier.fillMaxSize()) {
+    when (val apps = state.apps) {
+      AppsUiState.Loading -> MessageScreen(state.clock, state.weather, "Loading apps…")
+      is AppsUiState.Ready ->
+        if (apps.apps.isEmpty()) {
+          MessageScreen(state.clock, state.weather, "No apps installed")
+        } else {
+          AppGrid(
+            clock = state.clock,
+            weather = state.weather,
+            apps = apps.apps,
+            onAppClick = { onAction(LauncherAction.AppClicked(it)) },
+          )
+        }
+    }
+  }
+}
 
-    Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
-      when (val apps = state.apps) {
-        AppsUiState.Loading -> CenteredMessage("Loading apps…")
-        is AppsUiState.Ready ->
-          if (apps.apps.isEmpty()) {
-            CenteredMessage("No apps installed")
-          } else {
-            AppGrid(apps = apps.apps, onAppClick = { onAction(LauncherAction.AppClicked(it)) })
-          }
-      }
+/** Non-scrolling states: nothing can scroll away, so the header sits statically on top. */
+@Composable
+private fun MessageScreen(clock: ClockUiState, weather: WeatherUiState, message: String) {
+  Column(modifier = Modifier.fillMaxSize().padding(horizontal = 50.dp, vertical = 37.dp)) {
+    NocturneHeader(clock = clock, weather = weather)
+    Box(modifier = Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+      Text(text = message, style = MessageStyle)
     }
   }
 }
 
 /** "Big clock hero" header (Weather Layouts variant B): time dominant, weather tucked beneath. */
 @Composable
-private fun NocturneHeader(clock: ClockUiState, weather: WeatherUiState) {
-  Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End) {
+private fun NocturneHeader(
+  clock: ClockUiState,
+  weather: WeatherUiState,
+  modifier: Modifier = Modifier,
+) {
+  Column(modifier = modifier.fillMaxWidth(), horizontalAlignment = Alignment.End) {
     Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
       Text(text = clock.time, style = TimeStyle, modifier = Modifier.alignByBaseline())
       Text(text = clock.amPm, style = AmPmStyle, modifier = Modifier.alignByBaseline())
@@ -188,21 +205,32 @@ private fun SeparatorDot() {
 }
 
 @Composable
-private fun AppGrid(apps: List<AppInfo>, onAppClick: (AppInfo) -> Unit) {
+private fun AppGrid(
+  clock: ClockUiState,
+  weather: WeatherUiState,
+  apps: List<AppInfo>,
+  onAppClick: (AppInfo) -> Unit,
+) {
   val firstItemFocus = remember { FocusRequester() }
   // Move focus onto the first app so the remote can drive the grid immediately.
   LaunchedEffect(apps.isNotEmpty()) {
     if (apps.isNotEmpty()) firstItemFocus.requestFocus()
   }
 
+  // The grid is the whole screen: design's full-screen scroll surface with
+  // padding 74px 100px 120px (÷2 → dp), so cards slide under the screen edges.
   LazyVerticalGrid(
     columns = GridCells.Fixed(COLUMNS),
     horizontalArrangement = Arrangement.spacedBy(20.dp),
-    // Center an under-full grid vertically, like the design.
-    verticalArrangement = Arrangement.spacedBy(20.dp, Alignment.CenterVertically),
-    contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp),
+    verticalArrangement = Arrangement.spacedBy(20.dp),
+    contentPadding = PaddingValues(start = 50.dp, top = 37.dp, end = 50.dp, bottom = 60.dp),
     modifier = Modifier.fillMaxSize(),
   ) {
+    // The header rides in the scroll flow and scrolls away with the content.
+    // 15dp + the 20dp row gap = the design's 70px (35dp) header→grid spacing.
+    item(key = "header", span = { GridItemSpan(maxLineSpan) }) {
+      NocturneHeader(clock = clock, weather = weather, modifier = Modifier.padding(bottom = 15.dp))
+    }
     itemsIndexed(apps, key = { _, app -> app.componentName.flattenToString() }) { index, app ->
       AppCard(
         app = app,
@@ -262,13 +290,6 @@ private fun AppCard(app: AppInfo, onClick: () -> Unit, modifier: Modifier = Modi
         )
       }
     }
-  }
-}
-
-@Composable
-private fun CenteredMessage(message: String) {
-  Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-    Text(text = message, style = MessageStyle)
   }
 }
 

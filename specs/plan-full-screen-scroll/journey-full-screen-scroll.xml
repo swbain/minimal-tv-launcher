@@ -1,0 +1,36 @@
+<journey name="Nocturne full-screen scroll">
+  <description>
+    Verifies the updated scroll behavior from TV Launcher.dc.html: the scrollable
+    surface covers the whole screen and the time/weather header scrolls away with
+    the app grid, returning when the user scrolls back to the top.
+  </description>
+  <actions>
+    <action>
+      Verify that the launcher home screen shows a large serif clock with an AM/PM
+      suffix in the top-right corner, with a date line beneath it
+    </action>
+    <action>
+      Verify that a grid of app cards is visible below the header and one card has
+      an amber focus ring
+    </action>
+    <action>
+      Press the D-pad down key repeatedly (up to 8 times) until focus reaches the
+      bottom row of the app grid
+    </action>
+    <action>
+      Verify that the large clock header is no longer visible on screen (it scrolled
+      away with the content)
+    </action>
+    <action>
+      Verify that app cards extend to the top region of the screen where the header
+      used to be (the scroll surface covers the full screen)
+    </action>
+    <action>
+      Press the D-pad up key repeatedly (up to 8 times) until focus reaches the top
+      row of the app grid
+    </action>
+    <action>
+      Verify that the large serif clock header is visible again in the top-right corner
+    </action>
+  </actions>
+</journey>

@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plan: Nocturne — Full-Screen Scroll</title>
+<style>
+  :root {
+    /* Nocturne visual identity — synced with plan-nocturne-tv-launcher.html */
+    --bg: #0a0b0e;
+    --bg-raised: #12141a;
+    --bg-inset: #08090c;
+    --border: #23262e;
+    --border-soft: #1a1d24;
+    --text: #e8eaef;
+    --text-secondary: #cdd2da;
+    --text-muted: #7c7f88;
+    --accent: #efa831;          /* oklch(0.78 0.15 75) — amber focus ring */
+    --accent-soft: rgba(239, 168, 49, 0.12);
+    --accent-glow: #f9b73f;     /* oklch(0.82 0.15 78) — sun dot */
+    --ok: #7fb97a;
+    --danger: #c96a5c;
+    --serif: 'Newsreader', Georgia, 'Times New Roman', serif;
+    --mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--serif);
+    font-size: 17px;
+    line-height: 1.65;
+  }
+  main { max-width: 960px; margin: 0 auto; padding: 56px 32px 140px; }
+  h1 { font-size: 40px; font-weight: 600; line-height: 1.15; margin: 0 0 12px; letter-spacing: 0.2px; }
+  h2 {
+    font-size: 27px; font-weight: 600; margin: 64px 0 16px;
+    padding-bottom: 10px; border-bottom: 1px solid var(--border);
+  }
+  h3 { font-size: 21px; font-weight: 600; margin: 36px 0 10px; }
+  h4 { font-size: 17.5px; font-weight: 600; margin: 28px 0 8px; color: var(--text-secondary); }
+  p { margin: 0 0 14px; }
+  a { color: var(--accent); }
+  em { color: var(--text-secondary); }
+  code {
+    font-family: var(--mono); font-size: 0.82em;
+    background: var(--bg-raised); border: 1px solid var(--border-soft);
+    border-radius: 5px; padding: 1.5px 6px; color: var(--text-secondary);
+  }
+  pre {
+    background: var(--bg-inset); border: 1px solid var(--border-soft); border-radius: 10px;
+    padding: 16px 18px; overflow-x: auto; line-height: 1.5; margin: 14px 0 20px;
+  }
+  pre code { background: none; border: none; padding: 0; font-size: 13px; color: var(--text-secondary); }
+  ul { padding-left: 26px; margin: 0 0 16px; }
+  li { margin: 5px 0; }
+  table { border-collapse: collapse; width: 100%; margin: 14px 0 22px; font-size: 15px; }
+  th, td { border: 1px solid var(--border-soft); padding: 8px 12px; text-align: left; }
+  th { background: var(--bg-raised); font-weight: 600; color: var(--text-secondary); }
+  td code { font-size: 12.5px; }
+  header .meta { margin: 18px 0 4px; }
+  details {
+    background: var(--bg-raised); border: 1px solid var(--border-soft);
+    border-radius: 10px; padding: 12px 18px; margin: 12px 0;
+  }
+  details summary { cursor: pointer; font-weight: 600; color: var(--text-secondary); }
+  details[open] summary { margin-bottom: 10px; }
+  dl { display: grid; grid-template-columns: 130px 1fr; gap: 6px 18px; margin: 8px 0; font-size: 14.5px; }
+  dt { color: var(--text-muted); font-style: italic; }
+  dd { margin: 0; font-family: var(--mono); font-size: 12.5px; word-break: break-all; align-self: center; }
+  .subtitle { font-style: italic; color: var(--text-muted); font-size: 18px; margin-bottom: 6px; }
+  .tag {
+    display: inline-block; font-family: var(--mono); font-size: 11px; font-weight: 600;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    border-radius: 5px; padding: 2px 8px; margin-right: 6px; vertical-align: 1px;
+  }
+  .tag.existing { background: rgba(127, 185, 122, 0.12); color: var(--ok); border: 1px solid rgba(127,185,122,0.3); }
+  .tag.new { background: var(--accent-soft); color: var(--accent); border: 1px solid rgba(239,168,49,0.35); }
+  .files li { margin: 8px 0; }
+  .phase {
+    background: var(--bg-raised); border: 1px solid var(--border);
+    border-radius: 16px; padding: 26px 30px 22px; margin: 26px 0;
+  }
+  .phase > h3 { margin-top: 0; }
+  .status {
+    background: var(--bg-inset); color: var(--accent); border: 1px solid var(--border);
+    min-width: 34px; display: inline-block; text-align: center;
+  }
+  .checklist { list-style: none; padding-left: 6px; }
+  .checklist li { margin: 9px 0; padding-left: 2px; }
+  .loop {
+    background: var(--accent-soft); border: 1px solid rgba(239,168,49,0.35);
+    border-radius: 10px; padding: 14px 18px; margin: 20px 0 4px;
+    font-size: 15.5px;
+  }
+  .before-after { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 18px 0 24px; }
+  .before-after > div {
+    background: var(--bg-inset); border: 1px solid var(--border-soft); border-radius: 12px;
+    padding: 16px 18px; font-size: 14.5px;
+  }
+  .before-after h5 {
+    margin: 0 0 10px; font-family: var(--mono); font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted);
+  }
+  .before-after pre { margin: 0; border: none; background: none; padding: 0; }
+</style>
+</head>
+<body>
+<main>
+
+  <!-- ===== HEADER + UPDATABLE METADATA ===== -->
+  <header>
+    <h1>Plan: Nocturne — Full-Screen Scroll</h1>
+    <p class="subtitle">Make the whole screen the scroll surface; the clock/weather header joins the scroll flow and scrolls away with the app grid.</p>
+    <details class="meta">
+      <summary>Metadata</summary>
+      <dl>
+        <dt>created</dt>      <dd>2026-07-05T16:22:46-05:00</dd>
+        <dt>modified</dt>     <dd>2026-07-05T16:22:46-05:00, 2026-07-05T16:51:02-05:00</dd>
+        <dt>commits</dt>      <dd>e876cf949222522d51b432a3524cd53b60973661 (base)</dd>
+        <dt>branches</dt>     <dd>scroll-fix</dd>
+        <dt>agent name</dt>   <dd>Fable 5 (claude-fable-5)</dd>
+        <dt>session id</dt>   <dd>7f2c72a2-2235-4fe0-826d-b1d2b0682ea2</dd>
+        <dt>back refs</dt>    <dd>specs/plan-nocturne-tv-launcher.html, claude.ai/design project 50077339-6d83-4127-8716-f956abd14bd2 (TV Launcher.dc.html)</dd>
+        <dt>forward refs</dt> <dd>(PR URL appended after submit)</dd>
+      </dl>
+    </details>
+  </header>
+
+  <!-- ===== PURPOSE / PROBLEM / SOLUTION ===== -->
+  <section id="purpose">
+    <h2>Purpose</h2>
+    <p>Match the updated <em>TV Launcher.dc.html</em> design in the claude.ai/design project: the vertically scrollable
+    container must cover the entire screen (not just the region below the header), and the time/weather header must
+    scroll with the content instead of staying pinned. The fixed wallpaper + scrim stage stays put behind the
+    scrolling content, exactly as the design's absolutely-positioned background layers do.</p>
+  </section>
+
+  <section id="problem">
+    <h2>Problem</h2>
+    <p><code>LauncherScreen</code> currently lays out a <code>Column</code> with global padding: a static
+    <code>NocturneHeader</code> on top, then a <code>Box(weight = 1f)</code> holding the
+    <code>LazyVerticalGrid</code>. Consequences that diverge from the design:</p>
+    <ul>
+      <li>The scrollable viewport is only the sub-region below the header — rows clip against an invisible line
+          mid-screen instead of sliding under the top edge of the display.</li>
+      <li>The header never moves: scrolling a long grid keeps ~90dp of screen permanently spent on the clock.</li>
+      <li>Grid content is vertically centered (<code>Alignment.CenterVertically</code>) inside the sub-region,
+          while the updated design flows content from the top of the scroll surface.</li>
+    </ul>
+    <div class="before-after">
+      <div>
+        <h5>Before — split layout</h5>
+        <pre><code>Column(padding 50/37dp)
+├─ NocturneHeader   ← pinned
+└─ Box(weight 1f)
+   └─ LazyVerticalGrid  ← scrolls
+      (centered vertically)</code></pre>
+      </div>
+      <div>
+        <h5>After — one scroll surface</h5>
+        <pre><code>LazyVerticalGrid(fillMaxSize,
+  contentPadding 50/37/50/60dp)
+├─ item(span = maxLineSpan)
+│  └─ NocturneHeader ← scrolls away
+└─ app cards…        ← top-flow</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <section id="solution">
+    <h2>Solution</h2>
+    <p>Collapse the split layout into a single full-screen <code>LazyVerticalGrid</code> and make the header its
+    first full-span item (<code>item(span = { GridItemSpan(maxLineSpan) })</code>). Move the old
+    <code>Column</code> padding into the grid's <code>contentPadding</code> so cards scroll under the screen edges
+    (design padding <code>74px 100px 120px</code> at 1920×1080 ⇒ <code>37dp top / 50dp horizontal / 60dp bottom</code>).
+    Drop the vertical centering so content flows from the top. Loading / empty states keep the old header-on-top
+    arrangement — with nothing to scroll, pinned vs. in-flow is indistinguishable. While here, sync
+    <code>NocturneBackground</code>'s scrim stops with the updated design source (its KDoc promises an exact mirror).
+    Verify on a headless TV emulator with the instrumented suite plus an <code>android journey</code> D-pad run,
+    then ship via Graphite with a detailed PR report.</p>
+  </section>
+
+  <!-- ===== RELEVANT FILES ===== -->
+  <section id="files" class="files">
+    <h2>Relevant Files</h2>
+
+    <h3>Existing Files</h3>
+    <ul>
+      <li><span class="tag existing">existing</span> <code>app/src/main/java/com/pavlovsfrog/minimaltvlauncher/LauncherScreen.kt</code> — the layout to restructure: header becomes a grid item, grid becomes full-screen.</li>
+      <li><span class="tag existing">existing</span> <code>app/src/main/java/com/pavlovsfrog/minimaltvlauncher/ui/NocturneBackground.kt</code> — fixed stage behind the scroll surface; scrim stops need a minor sync with the updated design.</li>
+      <li><span class="tag existing">existing</span> <code>app/src/androidTest/java/com/pavlovsfrog/minimaltvlauncher/LauncherScreenTest.kt</code> — existing smoke tests must keep passing; add a header-scrolls-away test here.</li>
+      <li><span class="tag existing">existing</span> <code>app/src/main/java/com/pavlovsfrog/minimaltvlauncher/MainActivity.kt</code> — unchanged consumer; confirms <code>NocturneBackground</code> wraps the screen so the stage stays fixed.</li>
+    </ul>
+
+    <h3>New Files</h3>
+    <ul>
+      <li><span class="tag new">new</span> <em>(none — this is a restructuring of existing composables and tests)</em></li>
+    </ul>
+  </section>
+
+  <!-- ===== IMPLEMENTATION PHASES ===== -->
+  <section id="phases">
+    <h2>Implementation Phases</h2>
+    <p><strong>IMPORTANT:</strong> Execute every phase and task step by step, in order, top to bottom.</p>
+    <p>Status markers: <code>[]</code> idle · <code>[wip]</code> in progress · <code>[x]</code> complete · <code>[f]</code> failed. All start as <code>[]</code>; the Build Plan workflow updates them as it works.</p>
+
+    <div class="phase">
+      <h3><code class="status">[x]</code> Phase 1: Full-screen scroll surface</h3>
+      <p>Restructure <code>LauncherScreen</code> so the grid is the screen and the header rides inside it.</p>
+
+      <h4>1. Restructure LauncherScreen</h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> Replace the outer <code>Column(padding)/Header/Box(weight)</code> shape: <code>LauncherScreen</code> becomes a full-size <code>Box</code>; the Ready-with-apps branch renders <code>AppGrid</code> directly at full screen size.</li>
+        <li><code class="status">[x]</code> Pass <code>clock</code>/<code>weather</code> into <code>AppGrid</code> and emit <code>NocturneHeader</code> as the grid's first item with <code>span = { GridItemSpan(maxLineSpan) }</code>, so it scrolls away with content.</li>
+        <li><code class="status">[x]</code> Move screen padding into the grid: <code>contentPadding = PaddingValues(start = 50.dp, top = 37.dp, end = 50.dp, bottom = 60.dp)</code> (design <code>74px 100px 120px</code> ÷ 2, keeping the current 50dp horizontal gutter).</li>
+        <li><code class="status">[x]</code> Header→grid gap: design <code>margin-bottom: 70px</code> ⇒ 35dp total; with <code>verticalArrangement = spacedBy(20.dp)</code> contributing 20dp, give the header item <code>padding(bottom = 15.dp)</code>.</li>
+        <li><code class="status">[x]</code> Drop <code>Alignment.CenterVertically</code> from <code>verticalArrangement</code> — content flows from the top like the design.</li>
+        <li><code class="status">[x]</code> Keep Loading / empty states as before (header on top, message centered below) — nothing scrolls there; reuse <code>NocturneHeader</code> with the same 50/37dp padding so the header position is identical across states.</li>
+        <li><code class="status">[x]</code> Preserve first-card autofocus (<code>FocusRequester</code> on the first app card, not the header item) so the remote drives the grid immediately; the header itself must not be focusable.</li>
+      </ul>
+
+      <h4>2. Sync NocturneBackground scrims with the updated design</h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> Vertical scrim bottom stop: <code>1.00f</code> alpha <code>0.82f → 0.90f</code> (design now <code>rgba(7,8,11,0.9)</code>).</li>
+        <li><code class="status">[x]</code> Radial vignette: center moves to <code>50% 40%</code>, transparent stop <code>0.55 → 0.52</code>, edge alpha <code>0.55 → 0.60</code> (design <code>radial-gradient(120% 90% at 50% 40%, transparent 52%, rgba(7,8,11,0.6) 100%)</code>); update the KDoc/comment stops to match.</li>
+      </ul>
+
+      <h4>3. Testing Strategy</h4>
+      <p>Compile + unit + lint gates from the README. Unit tests don't touch layout, so they prove no collateral damage; lint catches Compose misuse. Visual/behavioral proof lands in Phase 2–3.</p>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> <code>./gradlew :app:assembleDebug</code> — the restructured screen compiles.</li>
+        <li><code class="status">[x]</code> <code>./gradlew :app:testDebugUnitTest</code> — ViewModel/clock/weather units unaffected.</li>
+        <li><code class="status">[x]</code> <code>./gradlew :app:lintDebug</code> — no new lint issues.</li>
+      </ul>
+      <div class="loop">
+        🔁 <strong>Do not exit this phase until every box above is checked.</strong>
+        If any command fails, fix the cause and re-run — loop until all pass.
+      </div>
+    </div>
+
+    <div class="phase">
+      <h3><code class="status">[x]</code> Phase 2: Headless TV emulator + existing device gate</h3>
+      <p>Boot a headless Android TV emulator and keep the pre-existing instrumented smoke suite green. Per <code>CLAUDE.md</code>, <strong>no new Compose/Espresso UI tests are written</strong> — the scroll behavior itself is proven by the Phase 3 journey.</p>
+
+      <h4>1. Headless TV emulator</h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> Use the <code>android</code> CLI (android-cli skill) to provision/boot a headless Android TV emulator (no-window/GPU-off flags as the skill prescribes) and wait for boot completion.</li>
+      </ul>
+
+      <h4>2. Existing suite only — no new UI tests</h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> Leave <code>app/src/androidTest</code> untouched: UI behavior verification belongs to the Phase 3 journey (CLAUDE.md testing convention). Confirm by inspection that the three pre-existing smoke tests' expectations remain valid under the new layout (clock/weather on first frame; D-pad focuses a card; hidden weather shows date only).</li>
+      </ul>
+
+      <h4>3. Testing Strategy</h4>
+      <p>The project's real device gate from the README, run with the pre-existing suite only. Behavioral edge cases (overfull grid, header scroll-away, focus keep-in-view) are the Phase 3 journey's job.</p>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> <code>./gradlew :app:connectedDebugAndroidTest</code> — the pre-existing smoke suite passes unchanged on the headless TV emulator.</li>
+      </ul>
+      <div class="loop">
+        🔁 <strong>Do not exit this phase until every box above is checked.</strong>
+        If any command fails, fix the cause and re-run — loop until all pass.
+      </div>
+    </div>
+
+    <div class="phase">
+      <h3><code class="status">[x]</code> Phase 3: Journey verification + evidence</h3>
+      <p>Drive the real app like a viewer with a remote: an <code>android journey</code> run on the headless TV emulator, capturing screenshots for the PR report.</p>
+
+      <h4>1. Deploy and journey</h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> Install the debug APK on the emulator and launch the launcher activity.</li>
+        <li><code class="status">[x]</code> Author and run an <code>android journey</code> (android-cli skill) that: verifies clock + weather header at top-right on launch → D-pads down through the app grid → verifies the header scrolls off-screen and cards slide under the top edge (full-screen viewport) → D-pads back up → verifies the header returns and the first card regains focus.</li>
+        <li><code class="status">[x]</code> Save journey screenshots (launch, mid-scroll, scrolled-to-bottom, returned-to-top) to <code>specs/plan-full-screen-scroll/</code> for the PR body.</li>
+      </ul>
+
+      <h4>2. Testing Strategy</h4>
+      <p>End-to-end validation on real system UI (window insets, focus engine, remote input) that compose-rule tests can't fully reproduce. The journey's own assertions are the gate.</p>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> Journey evaluation (author the journey XML, then evaluate it action-by-action per the android-cli skill's journeys reference, driving the device with <code>android layout</code>/<code>android screen capture</code>/adb input) reports every action <code>PASSED</code> — header scrolls with content on the actual device image.</li>
+      </ul>
+      <div class="loop">
+        🔁 <strong>Do not exit this phase until every box above is checked.</strong>
+        If any command fails, fix the cause and re-run — loop until all pass.
+      </div>
+    </div>
+
+    <div class="phase">
+      <h3><code class="status">[wip]</code> Phase 4: Ship via Graphite</h3>
+      <p>Commit on <code>scroll-fix</code> and submit the PR with a detailed report using the Graphite CLI (graphite skill — <code>gt</code>, not raw <code>git</code>, for branch/PR operations).</p>
+
+      <h4>1. Commit and submit</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> <code>gt</code> commit the implementation + tests + plan on the <code>scroll-fix</code> branch.</li>
+        <li><code class="status">[]</code> <code>gt submit</code> the branch as a PR against <code>main</code> with a detailed report: problem, design reference, before/after layout diagram, what changed per file, full validation matrix (build/unit/lint/connected/journey), and embedded journey screenshots.</li>
+        <li><code class="status">[]</code> Append the PR URL to this plan's <code>forward refs</code>, plus commit SHA(s) and modified timestamp to the metadata header.</li>
+      </ul>
+
+      <h4>2. Testing Strategy</h4>
+      <p>The gate is a live, reviewable PR whose body carries the verification evidence.</p>
+      <ul class="checklist">
+        <li><code class="status">[]</code> <code>gt log</code> / PR URL resolves — branch submitted, PR open with the full report.</li>
+      </ul>
+      <div class="loop">
+        🔁 <strong>Do not exit this phase until every box above is checked.</strong>
+        If any command fails, fix the cause and re-run — loop until all pass.
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== GLOBAL VALIDATION ===== -->
+  <section id="validation">
+    <h2>Validation Commands</h2>
+    <p>Execute these commands to validate the entire plan is complete (all from the README's build gates plus the journey/PR gates):</p>
+    <ul class="checklist">
+      <li><code class="status">[]</code> <code>./gradlew :app:assembleDebug</code> — app builds.</li>
+      <li><code class="status">[]</code> <code>./gradlew :app:testDebugUnitTest</code> — unit suite green.</li>
+      <li><code class="status">[]</code> <code>./gradlew :app:lintDebug</code> — lint clean.</li>
+      <li><code class="status">[]</code> <code>./gradlew :app:connectedDebugAndroidTest</code> — pre-existing instrumented smoke suite (unchanged) green on the headless TV emulator.</li>
+      <li><code class="status">[]</code> Journey evaluation per the android-cli skill (all actions <code>PASSED</code>) — end-to-end scroll behavior verified with screenshots captured.</li>
+      <li><code class="status">[]</code> <code>gt log</code> — PR submitted with the detailed report.</li>
+    </ul>
+    <div class="loop">
+      🔁 <strong>The plan is not complete until every box is checked and every command passes. If for some reason a step is not possible to complete, mark it with [f] and move on if possible.</strong>
+    </div>
+  </section>
+
+  <!-- ===== NOTES ===== -->
+  <section id="notes">
+    <h2>Notes</h2>
+
+    <h3>Design source of truth</h3>
+    <p>claude.ai/design project <code>50077339-6d83-4127-8716-f956abd14bd2</code>, file <em>TV Launcher.dc.html</em>
+    (caption: <em>"full-screen scroll · header scrolls away · arrow keys / WASD to move focus, focus keeps in view"</em>).
+    Key structure: three absolutely-positioned background layers (wallpaper, linear scrim, radial vignette) under a
+    <code>position:absolute; inset:0; overflow-y:auto</code> scroll surface whose padded content holds the header and the
+    4-column grid. The Android analogue: <code>NocturneBackground</code> (fixed stage, already wraps the screen in
+    <code>MainActivity</code>) + a full-screen <code>LazyVerticalGrid</code> with the header as a full-span item.</p>
+
+    <h3>Design-px → dp conversion</h3>
+    <table>
+      <tr><th>Token</th><th>Design (1920×1080 px)</th><th>App (dp @ xhdpi)</th></tr>
+      <tr><td>Scroll content padding</td><td><code>74px 100px 120px</code></td><td><code>37 / 50 / 60</code> (keep current 50dp gutter)</td></tr>
+      <tr><td>Header → grid gap</td><td><code>70px</code></td><td><code>35dp</code> = 15dp item padding + 20dp arrangement</td></tr>
+      <tr><td>Grid gap</td><td><code>40px</code></td><td><code>20dp</code> (unchanged)</td></tr>
+      <tr><td>Keep-in-view pad</td><td><code>90px</code></td><td>handled by Lazy grid bring-into-view (see below)</td></tr>
+    </table>
+
+    <h3>Decisions &amp; tradeoffs</h3>
+    <ul>
+      <li><strong>Header as a grid item, not a nested scroll column:</strong> a full-span <code>item</code> in the existing
+        <code>LazyVerticalGrid</code> gives the scroll-away behavior with zero new nesting, keeps lazy composition for large
+        app lists, and keeps the D-pad focus engine's built-in bring-into-view (the design's <code>keepInView</code> hand-roll
+        is the web stand-in for exactly this).</li>
+      <li><strong>Vertical centering removed:</strong> the previous under-full-grid centering came from the old design pass;
+        the updated design flows content from the top under the header. Preview renders will confirm an under-full grid
+        still looks intentional.</li>
+      <li><strong>Loading/empty keep a static header:</strong> those states have no scrollable content, so putting the
+        message inside a lazy grid would add complexity for no observable difference.</li>
+      <li><strong>Scrim sync included:</strong> the design's scrims changed slightly alongside the scroll rework
+        (bottom stop 0.9, vignette recentered at 40% height). <code>NocturneBackground</code>'s KDoc claims an exact mirror
+        of the design source, so shipping the scroll change without the scrim sync would silently break that contract.</li>
+      <li><strong>Focus search up from row 1:</strong> with the header unfocusable, D-pad-up from the top row is a no-op
+        (focus stays), which matches TV convention; the design's WASD handler behaves the same way.</li>
+    </ul>
+
+    <h3>Risks</h3>
+    <ul>
+      <li><em>Autofocus timing:</em> the first card is now grid index 1 (after the header item). The
+        <code>FocusRequester</code> must stay attached to the first <em>app card</em>; the existing
+        <code>grid_isDpadDrivable</code> test guards the regression.</li>
+      <li><em>Scroll position on app-list refresh:</em> <code>onResume → ScreenResumed</code> re-emits the list; keyed items
+        (<code>componentName</code>) preserve scroll/focus state, same as today.</li>
+      <li><em>Headless journey flakiness:</em> journeys on emulators can be slow to settle; prefer explicit waits on
+        visible text ("9:42"-style clock is dynamic — assert on stable anchors like weather/app labels where possible).</li>
+    </ul>
+  </section>
+
+  <!-- ===== AMENDMENTS ===== -->
+  <section id="amendments">
+    <h2>Amendments</h2>
+    <details>
+      <summary>2026-07-05 — UI-testing policy: journeys only, no Compose/Espresso UI tests</summary>
+      <p>Mid-build, the user set a project-wide convention (now recorded in <code>CLAUDE.md</code>): no
+      Compose/Espresso UI tests are to be written; all UI behavior verification happens via Android
+      journeys. The <code>grid_scrolls_headerScrollsAway</code> compose test added during Phase 2 was
+      reverted (<code>app/src/androidTest</code> is untouched by this change), Phase 2 was reshaped to
+      "existing suite only", and the header-scrolls-away proof now rests entirely on the Phase 3
+      journey evaluation.</p>
+    </details>
+  </section>
+
+</main>
+</body>
+</html>

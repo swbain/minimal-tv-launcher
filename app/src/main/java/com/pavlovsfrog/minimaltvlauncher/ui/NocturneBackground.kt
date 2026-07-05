@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.geometry.center
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.scale
@@ -39,25 +39,26 @@ fun NocturneBackground(
           0.00f to NocturneColors.ScrimTint.copy(alpha = 0.62f),
           0.34f to NocturneColors.ScrimTint.copy(alpha = 0.34f),
           0.70f to NocturneColors.ScrimTint.copy(alpha = 0.50f),
-          1.00f to NocturneColors.ScrimTint.copy(alpha = 0.82f),
+          1.00f to NocturneColors.ScrimTint.copy(alpha = 0.90f),
         )
       )
     )
-    // Design: radial-gradient(120% 90% at 50% 50%, transparent 55%, rgba(7,8,11,0.55) 100%).
+    // Design: radial-gradient(120% 90% at 50% 40%, transparent 52%, rgba(7,8,11,0.6) 100%).
     // Compose radial brushes are circular, so draw a circle of radius ry scaled out to rx.
     Box(
       modifier = Modifier.fillMaxSize().drawWithCache {
         val radiusY = size.height * 0.9f
+        val vignetteCenter = Offset(size.width * 0.5f, size.height * 0.4f)
         val brush = Brush.radialGradient(
-          0.55f to Color.Transparent,
-          1.00f to NocturneColors.ScrimTint.copy(alpha = 0.55f),
-          center = size.center,
+          0.52f to Color.Transparent,
+          1.00f to NocturneColors.ScrimTint.copy(alpha = 0.60f),
+          center = vignetteCenter,
           radius = radiusY,
         )
         val scaleX = (size.width * 1.2f) / radiusY
         onDrawBehind {
           if (size.minDimension > 0f) {
-            scale(scaleX = scaleX, scaleY = 1f, pivot = center) { drawRect(brush) }
+            scale(scaleX = scaleX, scaleY = 1f, pivot = vignetteCenter) { drawRect(brush) }
           }
         }
       }
