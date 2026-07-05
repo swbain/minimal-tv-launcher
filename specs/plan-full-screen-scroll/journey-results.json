@@ -1,0 +1,50 @@
+{
+  "journey": "Nocturne full-screen scroll",
+  "device": "nocturne_tv (Android TV x86_64, API 36, 1920x1080 @ 320dpi, headless)",
+  "app": "com.pavlovsfrog.minimaltvlauncher (debug, branch scroll-fix)",
+  "date": "2026-07-05",
+  "results": [
+    {
+      "action": "Verify that the launcher home screen shows a large serif clock with an AM/PM suffix in the top-right corner, with a date line beneath it",
+      "status": "PASSED",
+      "commands": ["android screen capture -o journey-01-launch.png"],
+      "comment": "Clock '4:48 PM' rendered top-right in Newsreader serif; '84° Partly Cloudy · Sun · Jul 5' beneath with sun dot."
+    },
+    {
+      "action": "Verify that a grid of app cards is visible below the header and one card has an amber focus ring",
+      "status": "PASSED",
+      "commands": ["android screen capture -o journey-01-launch.png"],
+      "comment": "4x4 grid of 16 apps (4 real + 12 test dummies installed to overflow the viewport); first card focused with amber ring and glow."
+    },
+    {
+      "action": "Press the D-pad down key repeatedly (up to 8 times) until focus reaches the bottom row of the app grid",
+      "status": "PASSED",
+      "commands": ["adb shell input keyevent 20", "adb shell input keyevent 20", "adb shell input keyevent 20"],
+      "comment": "3 presses reached row 4 of 4; grid scrolled to keep the focused row in view."
+    },
+    {
+      "action": "Verify that the large clock header is no longer visible on screen (it scrolled away with the content)",
+      "status": "PASSED",
+      "commands": ["android screen capture -o journey-03-bottom.png"],
+      "comment": "No clock/weather visible anywhere at bottom scroll position — header scrolled off with the content."
+    },
+    {
+      "action": "Verify that app cards extend to the top region of the screen where the header used to be (the scroll surface covers the full screen)",
+      "status": "PASSED",
+      "commands": ["android screen capture -o journey-03-bottom.png"],
+      "comment": "Row 1 cards clipped by the physical top edge of the display (y=0) — the scroll viewport is the full screen, not a sub-region."
+    },
+    {
+      "action": "Press the D-pad up key repeatedly (up to 8 times) until focus reaches the top row of the app grid",
+      "status": "PASSED",
+      "commands": ["adb shell input keyevent 19", "adb shell input keyevent 19", "adb shell input keyevent 19"],
+      "comment": "3 presses returned focus to row 1."
+    },
+    {
+      "action": "Verify that the large serif clock header is visible again in the top-right corner",
+      "status": "PASSED",
+      "commands": ["android screen capture -o journey-04-back-top.png"],
+      "comment": "Header fully restored ('4:49 PM', weather, date) with first card focused."
+    }
+  ]
+}
