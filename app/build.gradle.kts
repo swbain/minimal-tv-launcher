@@ -5,10 +5,10 @@ plugins {
 }
 
 android {
-    namespace = "com.example.minimaltvlauncher"
+    namespace = "com.pavlovsfrog.minimaltvlauncher"
     compileSdk = 36
     defaultConfig {
-        applicationId = "com.example.minimaltvlauncher"
+        applicationId = "com.pavlovsfrog.minimaltvlauncher"
         minSdk = 24
         targetSdk = 36
         versionCode = 1

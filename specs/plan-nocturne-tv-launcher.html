@@ -163,7 +163,7 @@
   <!-- ===== RELEVANT FILES ===== -->
   <section id="files" class="files">
     <h2>Relevant Files</h2>
-    <p>Single-module app, package <code>com.example.minimaltvlauncher</code>. Paths below are relative to the repo root; Kotlin sources live under <code>app/src/main/java/com/example/minimaltvlauncher/</code>.</p>
+    <p>Single-module app, package <code>com.pavlovsfrog.minimaltvlauncher</code>. Paths below are relative to the repo root; Kotlin sources live under <code>app/src/main/java/com/pavlovsfrog/minimaltvlauncher/</code>.</p>
 
     <h3>Existing Files</h3>
     <ul>
@@ -475,8 +475,8 @@
       <p class="qa-answer"><code>minSdk 24</code> predates java.time (API 26) and enabling core-library desugaring for one clock string is not worth the build complexity. The formatter is a pure function with tests, so migrating later is trivial.</p>
     </details>
     <details>
-      <summary>Package name stays <code>com.example.minimaltvlauncher</code></summary>
-      <p class="qa-answer">Renaming to a personal namespace touches every file for zero functional gain and would invalidate the installed app on the TV. Left as-is; rename before any store distribution.</p>
+      <summary>Package name is <code>com.pavlovsfrog.minimaltvlauncher</code></summary>
+      <p class="qa-answer">Renamed from the placeholder <code>com.example</code> prefix to the owned <code>com.pavlovsfrog</code> namespace. This touches every source file's package/import and the Gradle <code>namespace</code>/<code>applicationId</code>; note the new <code>applicationId</code> installs as a distinct app rather than an update to any prior <code>com.example</code> build.</p>
     </details>
   </section>
 
