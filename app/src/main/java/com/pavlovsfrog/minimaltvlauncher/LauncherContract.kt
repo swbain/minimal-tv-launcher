@@ -10,7 +10,19 @@ data class LauncherState(
   val apps: AppsUiState = AppsUiState.Loading,
   val clock: ClockUiState = ClockUiState("", "", ""),
   val weather: WeatherUiState = WeatherUiState.Hidden,
+  val overlay: Overlay = Overlay.None,
 )
+
+/** At most one overlay owns the screen (and TV focus) at a time. */
+sealed interface Overlay {
+  data object None : Overlay
+
+  /** The long-press action row (Hide · Uninstall · Cancel), anchored to [app]'s tile. */
+  data class AppMenu(val app: AppInfo) : Overlay
+
+  /** The full-screen all-apps settings list (opened by the header gear). */
+  data object Settings : Overlay
+}
 
 sealed interface AppsUiState {
   data object Loading : AppsUiState
@@ -42,6 +54,14 @@ sealed interface WeatherUiState {
 sealed interface LauncherAction {
   data class AppClicked(val app: AppInfo) : LauncherAction
 
+  data class AppLongPressed(val app: AppInfo) : LauncherAction
+
+  data object MenuDismissed : LauncherAction
+
+  data class HideApp(val app: AppInfo) : LauncherAction
+
+  data class UninstallApp(val app: AppInfo) : LauncherAction
+
   data object ScreenResumed : LauncherAction
 
   data object LaunchFailed : LauncherAction
@@ -49,4 +69,7 @@ sealed interface LauncherAction {
 
 sealed interface LauncherEvent {
   data class LaunchApp(val componentName: ComponentName) : LauncherEvent
+
+  /** Fires the platform ACTION_DELETE flow — the system owns the confirmation dialog. */
+  data class RequestUninstall(val packageName: String) : LauncherEvent
 }

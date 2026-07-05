@@ -10,6 +10,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.core.net.toUri
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.Lifecycle
@@ -39,6 +40,7 @@ class MainActivity : ComponentActivity() {
         viewModel.events.collect { event ->
           when (event) {
             is LauncherEvent.LaunchApp -> launchApp(event.componentName)
+            is LauncherEvent.RequestUninstall -> requestUninstall(event.packageName)
           }
         }
       }
@@ -67,6 +69,14 @@ class MainActivity : ComponentActivity() {
     super.onResume()
     // Pick up apps installed or removed while the launcher was in the background.
     viewModel.onAction(LauncherAction.ScreenResumed)
+  }
+
+  /**
+   * The system shows its own uninstall confirmation; ScreenResumed re-queries PackageManager
+   * on return, which absorbs both the confirmed and the cancelled outcome.
+   */
+  private fun requestUninstall(packageName: String) {
+    startActivity(Intent(Intent.ACTION_DELETE, "package:$packageName".toUri()))
   }
 
   private fun launchApp(componentName: ComponentName) {

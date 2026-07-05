@@ -291,33 +291,33 @@
     </div>
 
     <div class="phase">
-      <h3><code class="status">[]</code> Phase 3: Long-press action row — Hide / Uninstall / Cancel (branch <code>longpress-menu</code>, PR 4)</h3>
+      <h3><code class="status">[wip]</code> Phase 3: Long-press action row — Hide / Uninstall / Cancel (branch <code>longpress-menu</code>, PR 4)</h3>
       <p>The anchored menu from design §2. The ViewModel owns a tiny overlay state machine; Compose renders scrim + a ghost of the pressed tile + the three-button row, anchored below the tile (flipping above when it would clip the bottom edge). Uninstall fires the <em>platform</em> flow — <code>Intent.ACTION_DELETE</code> with a <code>package:</code> URI — and the OS shows its own confirmation; the launcher must NOT build one (design §3 is explicit; the prototype dialog is a labeled mock). All design px halve to dp/sp (1080p TV = xhdpi 2.0, the convention already used throughout <code>LauncherScreen.kt</code>).</p>
 
       <h4>3.1. Contract + ViewModel</h4>
       <ul class="checklist">
-        <li><code class="status">[]</code> <code>LauncherContract</code>: <code>sealed interface Overlay { data object None; data class AppMenu(val app: AppInfo); data object Settings }</code> on <code>LauncherState</code> (Settings variant lands here, used in Phase 4); actions <code>AppLongPressed(app)</code>, <code>MenuDismissed</code>, <code>HideApp(app)</code>, <code>UninstallApp(app)</code>; event <code>RequestUninstall(packageName)</code></li>
-        <li><code class="status">[]</code> <code>LauncherViewModel</code>: long-press opens the menu; <code>HideApp</code> → <code>setHidden(pkg, true)</code> + overlay None (grid updates via the Phase 2 combine); <code>UninstallApp</code> → emit <code>RequestUninstall</code> + overlay None; <code>MenuDismissed</code> → None; <code>ScreenResumed</code> already reloads+prunes, which absorbs the post-system-dialog return in both outcomes</li>
-        <li><code class="status">[]</code> <code>MainActivity</code>: on <code>RequestUninstall</code>, <code>startActivity(Intent(Intent.ACTION_DELETE, "package:$pkg".toUri()))</code>; manifest gains <code>&lt;uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES"/&gt;</code> (normal permission, required for the package-URI delete flow on API 26+)</li>
+        <li><code class="status">[x]</code> <code>LauncherContract</code>: <code>sealed interface Overlay { data object None; data class AppMenu(val app: AppInfo); data object Settings }</code> on <code>LauncherState</code> (Settings variant lands here, used in Phase 4); actions <code>AppLongPressed(app)</code>, <code>MenuDismissed</code>, <code>HideApp(app)</code>, <code>UninstallApp(app)</code>; event <code>RequestUninstall(packageName)</code></li>
+        <li><code class="status">[x]</code> <code>LauncherViewModel</code>: long-press opens the menu; <code>HideApp</code> → <code>setHidden(pkg, true)</code> + overlay None (grid updates via the Phase 2 combine); <code>UninstallApp</code> → emit <code>RequestUninstall</code> + overlay None; <code>MenuDismissed</code> → None; <code>ScreenResumed</code> already reloads+prunes, which absorbs the post-system-dialog return in both outcomes</li>
+        <li><code class="status">[x]</code> <code>MainActivity</code>: on <code>RequestUninstall</code>, <code>startActivity(Intent(Intent.ACTION_DELETE, "package:$pkg".toUri()))</code>; manifest gains <code>&lt;uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES"/&gt;</code> (normal permission, required for the package-URI delete flow on API 26+)</li>
       </ul>
 
       <h4>3.2. Overlay UI (<code>ui/AppActionMenu.kt</code>)</h4>
       <ul class="checklist">
-        <li><code class="status">[]</code> <code>AppCard</code>: add <code>onLongClick</code> (tv-material3 <code>Card</code> supports it) dispatching <code>AppLongPressed</code>; record each tile's root-coordinate bounds via <code>onGloballyPositioned</code> so the overlay can anchor</li>
-        <li><code class="status">[]</code> Scrim: full-screen <code>rgba(5,6,9,0.55)</code>, fade-in 180ms, clickable → <code>MenuDismissed</code>; ghost duplicate of the pressed tile drawn at its captured bounds above the scrim with the amber ring + lifted shadow</li>
-        <li><code class="status">[]</code> Action row: 3 items (Hide ⊘ · Uninstall ✕ · Cancel ‹), circle 33dp / glyph 13sp / item width 48dp / gap 10dp / label 9sp, colors per design §2 (Uninstall glyph <code>#ff9d97</code>; focused circle <code>#f4f4f5</code> with amber ring); centered under the tile 9dp below; flip above when it would pass the bottom edge; clamp ≥12dp from screen sides; entry = fade + 5dp rise, 160ms</li>
-        <li><code class="status">[]</code> Focus &amp; keys: on open, <code>FocusRequester</code> onto Hide; left/right moves within the row, no wrap; <code>BackHandler</code> + Cancel + scrim click all dispatch <code>MenuDismissed</code>; on dismiss, restore focus to the originating tile; guard OK auto-repeat (ignore <code>onClick</code> until first key-up after the menu opens)</li>
-        <li><code class="status">[]</code> Grid reflow: <code>Modifier.animateItem()</code> on grid items (fade ~240ms) so Hide/uninstall removals animate and survivors slide into place; after hiding the last focusable tile, focus falls back to the first remaining tile (or the header when none remain)</li>
+        <li><code class="status">[x]</code> <code>AppCard</code>: add <code>onLongClick</code> (tv-material3 <code>Card</code> supports it) dispatching <code>AppLongPressed</code>; record each tile's root-coordinate bounds via <code>onGloballyPositioned</code> so the overlay can anchor</li>
+        <li><code class="status">[x]</code> Scrim: full-screen <code>rgba(5,6,9,0.55)</code>, fade-in 180ms, clickable → <code>MenuDismissed</code>; ghost duplicate of the pressed tile drawn at its captured bounds above the scrim with the amber ring + lifted shadow</li>
+        <li><code class="status">[x]</code> Action row: 3 items (Hide ⊘ · Uninstall ✕ · Cancel ‹), circle 33dp / glyph 13sp / item width 48dp / gap 10dp / label 9sp, colors per design §2 (Uninstall glyph <code>#ff9d97</code>; focused circle <code>#f4f4f5</code> with amber ring); centered under the tile 9dp below; flip above when it would pass the bottom edge; clamp ≥12dp from screen sides; entry = fade + 5dp rise, 160ms</li>
+        <li><code class="status">[x]</code> Focus &amp; keys: on open, <code>FocusRequester</code> onto Hide; left/right moves within the row, no wrap; <code>BackHandler</code> + Cancel + scrim click all dispatch <code>MenuDismissed</code>; on dismiss, restore focus to the originating tile; guard OK auto-repeat (ignore <code>onClick</code> until first key-up after the menu opens)</li>
+        <li><code class="status">[x]</code> Grid reflow: <code>Modifier.animateItem()</code> on grid items (fade ~240ms) so Hide/uninstall removals animate and survivors slide into place; after hiding the last focusable tile, focus falls back to the first remaining tile (or the header when none remain)</li>
       </ul>
 
       <h4>3.3. Testing Strategy</h4>
       <p>State machine covered by JVM tests; the focus/anchor/intent behavior — everything a unit test can't see — covered by two journeys evaluated on a TV emulator with real sideloaded apps, driven per the android-cli skill (D-pad via adb input, verification via <code>android layout</code> / <code>android screen capture</code>). Screenshots land in <code>specs/plan-favorites-longpress-settings/</code>.</p>
       <ul class="checklist">
-        <li><code class="status">[]</code> <code>LauncherViewModelTest</code> additions: long-press→menu, hide→persist+close, uninstall→event+close, dismiss→no writes — <code>./gradlew :app:testDebugUnitTest</code></li>
-        <li><code class="status">[]</code> <code>./gradlew :app:assembleDebug :app:lintDebug</code> — build + lint clean</li>
-        <li><code class="status">[]</code> Evaluate <code>journeys/journey-longpress-hide.xml</code> on the TV emulator — long-press shows the row anchored to the tile; Hide removes the tile with reflow; relaunching the app keeps it hidden — all actions PASSED</li>
-        <li><code class="status">[]</code> Evaluate <code>journeys/journey-longpress-uninstall-cancel.xml</code> — Uninstall opens the <em>system</em> dialog (not launcher-drawn); Cancel returns with grid unchanged; menu Back/Cancel paths return focus to the pressed tile — all actions PASSED</li>
-        <li><code class="status">[]</code> <code>gt create longpress-menu -am "feat: long-press action row with hide/uninstall/cancel"</code> then <code>gt submit --stack --no-interactive -d</code> — PR 4 up</li>
+        <li><code class="status">[x]</code> <code>LauncherViewModelTest</code> additions: long-press→menu, hide→persist+close, uninstall→event+close, dismiss→no writes — <code>./gradlew :app:testDebugUnitTest</code></li>
+        <li><code class="status">[x]</code> <code>./gradlew :app:assembleDebug :app:lintDebug</code> — build + lint clean</li>
+        <li><code class="status">[x]</code> Evaluate <code>journeys/journey-longpress-hide.xml</code> on the TV emulator — long-press shows the row anchored to the tile; Hide removes the tile with reflow; relaunching the app keeps it hidden — all actions PASSED</li>
+        <li><code class="status">[x]</code> Evaluate <code>journeys/journey-longpress-uninstall-cancel.xml</code> — Uninstall opens the <em>system</em> dialog (not launcher-drawn); Cancel returns with grid unchanged; menu Back/Cancel paths return focus to the pressed tile — all actions PASSED</li>
+        <li><code class="status">[x]</code> <code>gt create longpress-menu -am "feat: long-press action row with hide/uninstall/cancel"</code> then <code>gt submit --stack --no-interactive -d</code> — PR 4 up</li>
       </ul>
       <div class="loop">
         🔁 <strong>Do not exit this phase until every box above is checked.</strong>
@@ -493,6 +493,10 @@
     <details>
       <summary>2026-07-05 — Phase 2: KSP needs manual wiring of SQLDelight sources under AGP 9</summary>
       <p>SQLDelight 2.3.2 correctly registers its generated sources with AGP 9's built-in Kotlin <em>compilation</em>, but KSP resolves its own source roots and missed them, so Hilt could not resolve <code>LauncherDatabase</code>. Fixed in <code>app/build.gradle.kts</code>: a <code>KspAATask.configureEach</code> block feeds each variant's <code>generate&lt;Variant&gt;LauncherDatabaseInterface</code> output into <code>kspConfig.sourceRoots</code> (guarded to skip test variants, which have no generate task). Also of note: the repository's write methods needed block bodies — SQLDelight queries return <code>QueryResult</code>, which leaked out of expression bodies as the interface's <code>Unit</code> return type.</p>
+    </details>
+    <details>
+      <summary>2026-07-05 — Phase 3: OK-release guard reworked around repeatCount</summary>
+      <p>The planned "ignore onClick until first key-up after the menu opens" guard ate the first real press whenever the long-press release arrived before the overlay finished composing (which is how adb injects it, and can happen with fast real remotes too). Reworked: swallow auto-repeat key-downs (<code>repeatCount &gt; 0</code>) and any key-up not preceded by a fresh key-down since the menu opened — handles both event orderings. Verified on-device via the hide journey.</p>
     </details>
 
   </section>

@@ -51,6 +51,20 @@ class LauncherViewModel @Inject constructor(
     when (action) {
       is LauncherAction.AppClicked ->
         _events.tryEmit(LauncherEvent.LaunchApp(action.app.componentName))
+      is LauncherAction.AppLongPressed ->
+        _state.update { it.copy(overlay = Overlay.AppMenu(action.app)) }
+      LauncherAction.MenuDismissed -> _state.update { it.copy(overlay = Overlay.None) }
+      is LauncherAction.HideApp -> {
+        _state.update { it.copy(overlay = Overlay.None) }
+        // The Phase-2 combine() propagates the write back into the grid.
+        viewModelScope.launch {
+          visibilityRepository.setHidden(action.app.packageName, hidden = true)
+        }
+      }
+      is LauncherAction.UninstallApp -> {
+        _state.update { it.copy(overlay = Overlay.None) }
+        _events.tryEmit(LauncherEvent.RequestUninstall(action.app.packageName))
+      }
       LauncherAction.ScreenResumed -> {
         // Snap the clock immediately (the TV may have slept past many ticks or changed zone).
         _state.update { it.copy(clock = ClockFormatter.format(timeSource.nowMillis())) }

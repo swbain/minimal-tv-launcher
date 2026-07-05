@@ -1,0 +1,43 @@
+<journey name="Long-press Uninstall and Cancel paths">
+  <description>
+    Uninstall opens the system confirmation dialog (never a launcher-drawn one); cancelling it
+    returns to an unchanged grid. The menu's Cancel button and the Back key both dismiss the
+    menu and return focus to the pressed tile.
+  </description>
+  <actions>
+    <action>
+      Launch the Nocturne launcher (com.pavlovsfrog.minimaltvlauncher) and verify the app grid
+      is shown with at least one user-installed (uninstallable) app tile.
+    </action>
+    <action>
+      Move focus to a user-installed app tile and long-press OK on it. Verify the action row
+      appears.
+    </action>
+    <action>
+      Move focus right to Uninstall and press OK.
+    </action>
+    <action>
+      Verify a system uninstall confirmation dialog is shown (drawn by the OS package
+      installer, not by the launcher — the launcher's own UI must not contain the dialog).
+    </action>
+    <action>
+      Cancel the system dialog.
+    </action>
+    <action>
+      Verify the launcher is back in the foreground and the app tile is still present on the
+      grid, unchanged.
+    </action>
+    <action>
+      Long-press OK on the same tile again, move focus to Cancel, and press OK.
+    </action>
+    <action>
+      Verify the menu closes with no change to the grid and focus is back on the pressed tile.
+    </action>
+    <action>
+      Long-press OK on the same tile once more, then press Back.
+    </action>
+    <action>
+      Verify the menu closes with no change to the grid and focus is back on the pressed tile.
+    </action>
+  </actions>
+</journey>
