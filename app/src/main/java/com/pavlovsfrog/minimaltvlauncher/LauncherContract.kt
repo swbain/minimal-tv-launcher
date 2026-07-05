@@ -15,8 +15,18 @@ data class LauncherState(
 sealed interface AppsUiState {
   data object Loading : AppsUiState
 
-  data class Ready(val apps: List<AppInfo>) : AppsUiState
+  /**
+   * @param apps the home grid: favorites only, precomputed so composables stay dumb.
+   * @param allApps every installed app with its favorite flag (the settings list's input).
+   */
+  data class Ready(
+    val apps: List<AppInfo>,
+    val allApps: List<AppEntry> = emptyList(),
+  ) : AppsUiState
 }
+
+/** One installed app plus whether it is shown on the home grid. */
+data class AppEntry(val app: AppInfo, val isFavorite: Boolean)
 
 /** e.g. time = "9:41", amPm = "PM", date = "Sat · Jul 4". */
 data class ClockUiState(val time: String, val amPm: String, val date: String)

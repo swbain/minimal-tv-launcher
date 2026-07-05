@@ -114,15 +114,23 @@ fun LauncherScreen(
     when (val apps = state.apps) {
       AppsUiState.Loading -> MessageScreen(state.clock, state.weather, "Loading apps…")
       is AppsUiState.Ready ->
-        if (apps.apps.isEmpty()) {
-          MessageScreen(state.clock, state.weather, "No apps installed")
-        } else {
-          AppGrid(
-            clock = state.clock,
-            weather = state.weather,
-            apps = apps.apps,
-            onAppClick = { onAction(LauncherAction.AppClicked(it)) },
-          )
+        when {
+          apps.apps.isNotEmpty() ->
+            AppGrid(
+              clock = state.clock,
+              weather = state.weather,
+              apps = apps.apps,
+              onAppClick = { onAction(LauncherAction.AppClicked(it)) },
+            )
+          // Apps exist but every one is hidden — point at settings instead of "no apps".
+          apps.allApps.isNotEmpty() ->
+            MessageScreen(
+              clock = state.clock,
+              weather = state.weather,
+              message = "No favorites on this screen",
+              subline = "Open Settings (⚙) to star the apps you want here",
+            )
+          else -> MessageScreen(state.clock, state.weather, "No apps installed")
         }
     }
   }
@@ -130,11 +138,25 @@ fun LauncherScreen(
 
 /** Non-scrolling states: nothing can scroll away, so the header sits statically on top. */
 @Composable
-private fun MessageScreen(clock: ClockUiState, weather: WeatherUiState, message: String) {
+private fun MessageScreen(
+  clock: ClockUiState,
+  weather: WeatherUiState,
+  message: String,
+  subline: String? = null,
+) {
   Column(modifier = Modifier.fillMaxSize().padding(horizontal = 50.dp, vertical = 37.dp)) {
     NocturneHeader(clock = clock, weather = weather)
     Box(modifier = Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
-      Text(text = message, style = MessageStyle)
+      Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(text = message, style = MessageStyle)
+        if (subline != null) {
+          Text(
+            text = subline,
+            style = MessageStyle.copy(fontSize = 13.sp),
+            modifier = Modifier.padding(top = 6.dp),
+          )
+        }
+      }
     }
   }
 }

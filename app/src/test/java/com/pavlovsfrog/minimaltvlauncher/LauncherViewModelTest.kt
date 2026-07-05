@@ -2,6 +2,7 @@ package com.pavlovsfrog.minimaltvlauncher
 
 import android.content.ComponentName
 import androidx.lifecycle.viewModelScope
+import com.pavlovsfrog.minimaltvlauncher.data.VisibilityRepository
 import com.pavlovsfrog.minimaltvlauncher.weather.TempUnit
 import com.pavlovsfrog.minimaltvlauncher.weather.Weather
 import com.pavlovsfrog.minimaltvlauncher.weather.WeatherProvider
@@ -9,7 +10,10 @@ import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -54,6 +58,23 @@ class LauncherViewModelTest {
     override suspend fun currentWeather(): Result<Weather> = result
   }
 
+  private class FakeVisibilityRepository : VisibilityRepository {
+    val hidden = MutableStateFlow<Set<String>>(emptySet())
+    val setHiddenCalls = mutableListOf<Pair<String, Boolean>>()
+    val pruneCalls = mutableListOf<Collection<String>>()
+
+    override fun hiddenPackages(): Flow<Set<String>> = hidden
+
+    override suspend fun setHidden(packageName: String, hidden: Boolean) {
+      setHiddenCalls += packageName to hidden
+      this.hidden.update { if (hidden) it + packageName else it - packageName }
+    }
+
+    override suspend fun prune(installed: Collection<String>) {
+      pruneCalls += installed
+    }
+  }
+
   private fun appInfo(label: String) = AppInfo(
     label = label,
     packageName = "com.pavlovsfrog.$label",
@@ -64,10 +85,11 @@ class LauncherViewModelTest {
 
   private val loader = FakeAppsLoader()
   private val weather = FakeWeatherProvider()
+  private val visibility = FakeVisibilityRepository()
   private val fixedNow = 1_782_255_660_000L
 
   private fun buildViewModel() =
-    LauncherViewModel(loader, weather, timeSource = { fixedNow })
+    LauncherViewModel(loader, weather, timeSource = { fixedNow }, visibilityRepository = visibility)
 
   private fun runVmTest(block: suspend TestScope.(LauncherViewModel) -> Unit) =
     runTest(dispatcher) {
@@ -176,6 +198,69 @@ class LauncherViewModelTest {
     dispatcher.scheduler.runCurrent()
 
     assertEquals(ClockFormatter.format(fixedNow), viewModel.state.value.clock)
+  }
+
+  @Test
+  fun `hidden packages are filtered from the home list but kept in allApps`() = runVmTest { viewModel ->
+    val cinema = appInfo("cinema")
+    val music = appInfo("music")
+    loader.apps = listOf(cinema, music)
+    visibility.hidden.value = setOf(music.packageName)
+    dispatcher.scheduler.runCurrent()
+
+    val ready = viewModel.state.value.apps as AppsUiState.Ready
+    assertEquals(listOf(cinema), ready.apps)
+    assertEquals(
+      listOf(AppEntry(cinema, isFavorite = true), AppEntry(music, isFavorite = false)),
+      ready.allApps,
+    )
+  }
+
+  @Test
+  fun `unknown package defaults to favorite`() = runVmTest { viewModel ->
+    val fresh = appInfo("freshinstall")
+    loader.apps = listOf(fresh)
+    dispatcher.scheduler.runCurrent()
+
+    val ready = viewModel.state.value.apps as AppsUiState.Ready
+    assertEquals(listOf(AppEntry(fresh, isFavorite = true)), ready.allApps)
+  }
+
+  @Test
+  fun `hidden-set change mid-session updates state without ScreenResumed`() = runVmTest { viewModel ->
+    val cinema = appInfo("cinema")
+    loader.apps = listOf(cinema)
+    dispatcher.scheduler.runCurrent()
+    assertEquals(listOf(cinema), (viewModel.state.value.apps as AppsUiState.Ready).apps)
+    val loadsBefore = loader.loadCount
+
+    visibility.hidden.value = setOf(cinema.packageName)
+    dispatcher.scheduler.runCurrent()
+
+    assertEquals(emptyList<AppInfo>(), (viewModel.state.value.apps as AppsUiState.Ready).apps)
+    assertEquals(loadsBefore, loader.loadCount)
+  }
+
+  @Test
+  fun `all apps hidden yields empty home but full allApps`() = runVmTest { viewModel ->
+    val cinema = appInfo("cinema")
+    val music = appInfo("music")
+    loader.apps = listOf(cinema, music)
+    visibility.hidden.value = setOf(cinema.packageName, music.packageName)
+    dispatcher.scheduler.runCurrent()
+
+    val ready = viewModel.state.value.apps as AppsUiState.Ready
+    assertEquals(emptyList<AppInfo>(), ready.apps)
+    assertEquals(2, ready.allApps.size)
+  }
+
+  @Test
+  fun `reload prunes rows for uninstalled packages`() = runVmTest { viewModel ->
+    val cinema = appInfo("cinema")
+    loader.apps = listOf(cinema)
+    dispatcher.scheduler.runCurrent()
+
+    assertEquals(listOf(listOf(cinema.packageName)), visibility.pruneCalls)
   }
 
   @Test
