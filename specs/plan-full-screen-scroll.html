@@ -118,12 +118,12 @@
       <dl>
         <dt>created</dt>      <dd>2026-07-05T16:22:46-05:00</dd>
         <dt>modified</dt>     <dd>2026-07-05T16:22:46-05:00, 2026-07-05T16:51:02-05:00</dd>
-        <dt>commits</dt>      <dd>e876cf949222522d51b432a3524cd53b60973661 (base)</dd>
+        <dt>commits</dt>      <dd>e876cf949222522d51b432a3524cd53b60973661 (base), 2c96733130803af2b4e59d3fa40fefa179bcffb2 (implementation)</dd>
         <dt>branches</dt>     <dd>scroll-fix</dd>
         <dt>agent name</dt>   <dd>Fable 5 (claude-fable-5)</dd>
         <dt>session id</dt>   <dd>7f2c72a2-2235-4fe0-826d-b1d2b0682ea2</dd>
         <dt>back refs</dt>    <dd>specs/plan-nocturne-tv-launcher.html, claude.ai/design project 50077339-6d83-4127-8716-f956abd14bd2 (TV Launcher.dc.html)</dd>
-        <dt>forward refs</dt> <dd>(PR URL appended after submit)</dd>
+        <dt>forward refs</dt> <dd><a href="https://github.com/swbain/minimal-tv-launcher/pull/2">PR #2 — Full-screen scroll surface</a></dd>
       </dl>
     </details>
   </header>
@@ -288,20 +288,20 @@
     </div>
 
     <div class="phase">
-      <h3><code class="status">[wip]</code> Phase 4: Ship via Graphite</h3>
+      <h3><code class="status">[x]</code> Phase 4: Ship via Graphite</h3>
       <p>Commit on <code>scroll-fix</code> and submit the PR with a detailed report using the Graphite CLI (graphite skill — <code>gt</code>, not raw <code>git</code>, for branch/PR operations).</p>
 
       <h4>1. Commit and submit</h4>
       <ul class="checklist">
-        <li><code class="status">[]</code> <code>gt</code> commit the implementation + tests + plan on the <code>scroll-fix</code> branch.</li>
-        <li><code class="status">[]</code> <code>gt submit</code> the branch as a PR against <code>main</code> with a detailed report: problem, design reference, before/after layout diagram, what changed per file, full validation matrix (build/unit/lint/connected/journey), and embedded journey screenshots.</li>
-        <li><code class="status">[]</code> Append the PR URL to this plan's <code>forward refs</code>, plus commit SHA(s) and modified timestamp to the metadata header.</li>
+        <li><code class="status">[x]</code> <code>gt</code> commit the implementation + tests + plan on the <code>scroll-fix</code> branch.</li>
+        <li><code class="status">[x]</code> <code>gt submit</code> the branch as a PR against <code>main</code> with a detailed report: problem, design reference, before/after layout diagram, what changed per file, full validation matrix (build/unit/lint/connected/journey), and embedded journey screenshots.</li>
+        <li><code class="status">[x]</code> Append the PR URL to this plan's <code>forward refs</code>, plus commit SHA(s) and modified timestamp to the metadata header.</li>
       </ul>
 
       <h4>2. Testing Strategy</h4>
       <p>The gate is a live, reviewable PR whose body carries the verification evidence.</p>
       <ul class="checklist">
-        <li><code class="status">[]</code> <code>gt log</code> / PR URL resolves — branch submitted, PR open with the full report.</li>
+        <li><code class="status">[x]</code> <code>gt log</code> / PR URL resolves — branch submitted, PR open with the full report.</li>
       </ul>
       <div class="loop">
         🔁 <strong>Do not exit this phase until every box above is checked.</strong>
@@ -315,12 +315,12 @@
     <h2>Validation Commands</h2>
     <p>Execute these commands to validate the entire plan is complete (all from the README's build gates plus the journey/PR gates):</p>
     <ul class="checklist">
-      <li><code class="status">[]</code> <code>./gradlew :app:assembleDebug</code> — app builds.</li>
-      <li><code class="status">[]</code> <code>./gradlew :app:testDebugUnitTest</code> — unit suite green.</li>
-      <li><code class="status">[]</code> <code>./gradlew :app:lintDebug</code> — lint clean.</li>
-      <li><code class="status">[]</code> <code>./gradlew :app:connectedDebugAndroidTest</code> — pre-existing instrumented smoke suite (unchanged) green on the headless TV emulator.</li>
-      <li><code class="status">[]</code> Journey evaluation per the android-cli skill (all actions <code>PASSED</code>) — end-to-end scroll behavior verified with screenshots captured.</li>
-      <li><code class="status">[]</code> <code>gt log</code> — PR submitted with the detailed report.</li>
+      <li><code class="status">[x]</code> <code>./gradlew :app:assembleDebug</code> — app builds.</li>
+      <li><code class="status">[x]</code> <code>./gradlew :app:testDebugUnitTest</code> — unit suite green.</li>
+      <li><code class="status">[x]</code> <code>./gradlew :app:lintDebug</code> — lint clean.</li>
+      <li><code class="status">[x]</code> <code>./gradlew :app:connectedDebugAndroidTest</code> — pre-existing instrumented smoke suite (unchanged) green on the headless TV emulator.</li>
+      <li><code class="status">[x]</code> Journey evaluation per the android-cli skill (all actions <code>PASSED</code>) — end-to-end scroll behavior verified with screenshots captured.</li>
+      <li><code class="status">[x]</code> <code>gt log</code> — PR submitted with the detailed report.</li>
     </ul>
     <div class="loop">
       🔁 <strong>The plan is not complete until every box is checked and every command passes. If for some reason a step is not possible to complete, mark it with [f] and move on if possible.</strong>
