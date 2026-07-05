@@ -1,0 +1,17 @@
+-- Packages hidden from the home grid. Favorite = absent from this table, so newly
+-- installed apps are visible by definition.
+CREATE TABLE hiddenApp (
+  packageName TEXT NOT NULL PRIMARY KEY
+);
+
+selectAll:
+SELECT packageName FROM hiddenApp;
+
+hide:
+INSERT OR IGNORE INTO hiddenApp(packageName) VALUES (?);
+
+show:
+DELETE FROM hiddenApp WHERE packageName = ?;
+
+prune:
+DELETE FROM hiddenApp WHERE packageName NOT IN ?;

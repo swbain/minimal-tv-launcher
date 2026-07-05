@@ -3,6 +3,7 @@ package com.pavlovsfrog.minimaltvlauncher
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.pavlovsfrog.minimaltvlauncher.data.VisibilityRepository
 import com.pavlovsfrog.minimaltvlauncher.weather.WeatherProvider
 import com.pavlovsfrog.minimaltvlauncher.weather.WmoWeatherCode
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -15,6 +16,8 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -23,6 +26,7 @@ class LauncherViewModel @Inject constructor(
   private val appsLoader: AppsLoader,
   private val weatherRepository: WeatherProvider,
   private val timeSource: TimeSource,
+  private val visibilityRepository: VisibilityRepository,
 ) : ViewModel() {
 
   private val _state = MutableStateFlow(LauncherState())
@@ -33,7 +37,11 @@ class LauncherViewModel @Inject constructor(
   private val _events = MutableSharedFlow<LauncherEvent>(extraBufferCapacity = 1)
   val events: SharedFlow<LauncherEvent> = _events.asSharedFlow()
 
+  // null until the first PackageManager load; combine() below waits for it.
+  private val installedApps = MutableStateFlow<List<AppInfo>?>(null)
+
   init {
+    deriveAppsState()
     reloadApps()
     startClockTicker()
     startWeatherLoop()
@@ -53,10 +61,31 @@ class LauncherViewModel @Inject constructor(
     }
   }
 
+  /** Installed apps × hidden set → state, so a DB toggle updates home without a reload. */
+  private fun deriveAppsState() {
+    viewModelScope.launch {
+      combine(installedApps.filterNotNull(), visibilityRepository.hiddenPackages()) {
+        installed, hidden ->
+        installed.map { AppEntry(app = it, isFavorite = it.packageName !in hidden) }
+      }.collect { entries ->
+        _state.update {
+          it.copy(
+            apps = AppsUiState.Ready(
+              apps = entries.filter(AppEntry::isFavorite).map(AppEntry::app),
+              allApps = entries,
+            )
+          )
+        }
+      }
+    }
+  }
+
   private fun reloadApps() {
     viewModelScope.launch {
       val apps = appsLoader.loadApps()
-      _state.update { it.copy(apps = AppsUiState.Ready(apps)) }
+      installedApps.value = apps
+      // Keep the table honest: uninstall → reinstall behaves like a fresh install (visible).
+      visibilityRepository.prune(apps.map(AppInfo::packageName))
     }
   }
 

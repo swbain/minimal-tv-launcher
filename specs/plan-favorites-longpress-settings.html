@@ -252,37 +252,37 @@
     </div>
 
     <div class="phase">
-      <h3><code class="status">[]</code> Phase 2: SQLDelight visibility store (branch <code>sqldelight-visibility</code>, PR 3)</h3>
+      <h3><code class="status">[wip]</code> Phase 2: SQLDelight visibility store (branch <code>sqldelight-visibility</code>, PR 3)</h3>
       <p>Persistence with the smallest possible schema: a <code>hiddenApp</code> table holding only hidden package names. Favorite = not in the table, which makes "newly installed apps default to shown" a structural guarantee rather than a code path. The ViewModel combines installed apps × hidden set into state; rows for packages that are no longer installed are pruned on every reload (so uninstall → reinstall lands visible, like a fresh install). No UI change yet beyond home silently filtering (the table is empty until Phase 3 ships a way to hide).</p>
 
       <h4>2.1. Gradle + schema</h4>
       <ul class="checklist">
-        <li><code class="status">[]</code> <code>libs.versions.toml</code>: <code>sqldelight</code> (latest stable 2.x from Maven Central); plugin <code>app.cash.sqldelight</code>; libraries <code>android-driver</code>, <code>coroutines-extensions</code>, and <code>sqlite-driver</code> (testImplementation)</li>
-        <li><code class="status">[]</code> Root + app gradle: apply plugin; <code>sqldelight { databases { create("LauncherDatabase") { packageName.set("com.pavlovsfrog.minimaltvlauncher.db") } } }</code></li>
-        <li><code class="status">[]</code> <code>HiddenApp.sq</code>: <code>CREATE TABLE hiddenApp (packageName TEXT NOT NULL PRIMARY KEY);</code> with labeled queries <code>selectAll</code>, <code>hide</code> (<code>INSERT OR IGNORE</code>), <code>show</code> (<code>DELETE … WHERE packageName = ?</code>), <code>prune</code> (<code>DELETE … WHERE packageName NOT IN ?</code>)</li>
+        <li><code class="status">[x]</code> <code>libs.versions.toml</code>: <code>sqldelight</code> (latest stable 2.x from Maven Central); plugin <code>app.cash.sqldelight</code>; libraries <code>android-driver</code>, <code>coroutines-extensions</code>, and <code>sqlite-driver</code> (testImplementation)</li>
+        <li><code class="status">[x]</code> Root + app gradle: apply plugin; <code>sqldelight { databases { create("LauncherDatabase") { packageName.set("com.pavlovsfrog.minimaltvlauncher.db") } } }</code></li>
+        <li><code class="status">[x]</code> <code>HiddenApp.sq</code>: <code>CREATE TABLE hiddenApp (packageName TEXT NOT NULL PRIMARY KEY);</code> with labeled queries <code>selectAll</code>, <code>hide</code> (<code>INSERT OR IGNORE</code>), <code>show</code> (<code>DELETE … WHERE packageName = ?</code>), <code>prune</code> (<code>DELETE … WHERE packageName NOT IN ?</code>)</li>
       </ul>
 
       <h4>2.2. Repository + DI</h4>
       <ul class="checklist">
-        <li><code class="status">[]</code> <code>data/VisibilityRepository.kt</code>: interface (<code>hiddenPackages(): Flow&lt;Set&lt;String&gt;&gt;</code>, <code>suspend setHidden(packageName, hidden)</code>, <code>suspend prune(installed: Collection&lt;String&gt;)</code>) + <code>SqlDelightVisibilityRepository</code> using <code>asFlow().mapToList(Dispatchers.IO)</code> mapped to a <code>Set</code>; writes on <code>Dispatchers.IO</code></li>
-        <li><code class="status">[]</code> <code>di/DatabaseModule.kt</code>: <code>@Provides @Singleton</code> <code>AndroidSqliteDriver(LauncherDatabase.Schema, context, "launcher.db")</code> → <code>LauncherDatabase</code> → repository binding</li>
+        <li><code class="status">[x]</code> <code>data/VisibilityRepository.kt</code>: interface (<code>hiddenPackages(): Flow&lt;Set&lt;String&gt;&gt;</code>, <code>suspend setHidden(packageName, hidden)</code>, <code>suspend prune(installed: Collection&lt;String&gt;)</code>) + <code>SqlDelightVisibilityRepository</code> using <code>asFlow().mapToList(Dispatchers.IO)</code> mapped to a <code>Set</code>; writes on <code>Dispatchers.IO</code></li>
+        <li><code class="status">[x]</code> <code>di/DatabaseModule.kt</code>: <code>@Provides @Singleton</code> <code>AndroidSqliteDriver(LauncherDatabase.Schema, context, "launcher.db")</code> → <code>LauncherDatabase</code> → repository binding</li>
       </ul>
 
       <h4>2.3. State derivation</h4>
       <ul class="checklist">
-        <li><code class="status">[]</code> <code>LauncherContract</code>: add <code>data class AppEntry(val app: AppInfo, val isFavorite: Boolean)</code>; <code>AppsUiState.Ready</code> gains <code>allApps: List&lt;AppEntry&gt;</code> alongside the home list (home = <code>allApps.filter { it.isFavorite }.map { it.app }</code>, precomputed in the VM so composables stay dumb)</li>
-        <li><code class="status">[]</code> <code>LauncherViewModel</code>: inject <code>VisibilityRepository</code>; rework <code>reloadApps()</code> into a <code>combine(installedAppsFlow, visibilityRepository.hiddenPackages())</code> collector so DB toggles update state without a reload; call <code>prune(installed.map { it.packageName })</code> after each <code>loadApps()</code></li>
-        <li><code class="status">[]</code> Home empty state: when all apps are hidden (but some are installed), show the design's "No favorites on this screen" + "Open Settings (⚙) to star the apps you want here" copy in <code>LauncherScreen</code> (distinct from "No apps installed")</li>
+        <li><code class="status">[x]</code> <code>LauncherContract</code>: add <code>data class AppEntry(val app: AppInfo, val isFavorite: Boolean)</code>; <code>AppsUiState.Ready</code> gains <code>allApps: List&lt;AppEntry&gt;</code> alongside the home list (home = <code>allApps.filter { it.isFavorite }.map { it.app }</code>, precomputed in the VM so composables stay dumb)</li>
+        <li><code class="status">[x]</code> <code>LauncherViewModel</code>: inject <code>VisibilityRepository</code>; rework <code>reloadApps()</code> into a <code>combine(installedAppsFlow, visibilityRepository.hiddenPackages())</code> collector so DB toggles update state without a reload; call <code>prune(installed.map { it.packageName })</code> after each <code>loadApps()</code></li>
+        <li><code class="status">[x]</code> Home empty state: when all apps are hidden (but some are installed), show the design's "No favorites on this screen" + "Open Settings (⚙) to star the apps you want here" copy in <code>LauncherScreen</code> (distinct from "No apps installed")</li>
       </ul>
 
       <h4>2.4. Testing Strategy</h4>
       <p>Pure JVM coverage: SQLDelight runs on an in-memory <code>JdbcSqliteDriver</code> (no emulator, no Robolectric), ViewModel tests use a fake <code>VisibilityRepository</code> backed by a <code>MutableStateFlow</code>.</p>
       <ul class="checklist">
-        <li><code class="status">[]</code> <code>VisibilityRepositoryTest</code>: hide/show round-trip; hide is idempotent; <code>prune</code> drops only uninstalled packages; flow emits on every write — <code>./gradlew :app:testDebugUnitTest</code></li>
-        <li><code class="status">[]</code> <code>LauncherViewModelTest</code>: hidden set filters home list; unknown (newly installed) package defaults to favorite; hidden-set change mid-session updates state without <code>ScreenResumed</code>; all-hidden yields empty home but full <code>allApps</code> — same gradle gate</li>
-        <li><code class="status">[]</code> <code>./gradlew :app:assembleDebug</code> — SQLDelight codegen compiles under AGP 9.2.1</li>
-        <li><code class="status">[]</code> <code>./gradlew :app:lintDebug</code> — clean</li>
-        <li><code class="status">[]</code> <code>gt create sqldelight-visibility -am "feat: persist hidden apps in SQLDelight, derive favorites-only home state"</code> then <code>gt submit --stack --no-interactive -d</code> — PR 3 up</li>
+        <li><code class="status">[x]</code> <code>VisibilityRepositoryTest</code>: hide/show round-trip; hide is idempotent; <code>prune</code> drops only uninstalled packages; flow emits on every write — <code>./gradlew :app:testDebugUnitTest</code></li>
+        <li><code class="status">[x]</code> <code>LauncherViewModelTest</code>: hidden set filters home list; unknown (newly installed) package defaults to favorite; hidden-set change mid-session updates state without <code>ScreenResumed</code>; all-hidden yields empty home but full <code>allApps</code> — same gradle gate</li>
+        <li><code class="status">[x]</code> <code>./gradlew :app:assembleDebug</code> — SQLDelight codegen compiles under AGP 9.2.1</li>
+        <li><code class="status">[x]</code> <code>./gradlew :app:lintDebug</code> — clean</li>
+        <li><code class="status">[x]</code> <code>gt create sqldelight-visibility -am "feat: persist hidden apps in SQLDelight, derive favorites-only home state"</code> then <code>gt submit --stack --no-interactive -d</code> — PR 3 up</li>
       </ul>
       <div class="loop">
         🔁 <strong>Do not exit this phase until every box above is checked.</strong>
@@ -490,7 +490,11 @@
   <!-- ===== AMENDMENTS ===== -->
   <section id="amendments">
     <h2>Amendments</h2>
-    <p><em>None yet — initial version.</em></p>
+    <details>
+      <summary>2026-07-05 — Phase 2: KSP needs manual wiring of SQLDelight sources under AGP 9</summary>
+      <p>SQLDelight 2.3.2 correctly registers its generated sources with AGP 9's built-in Kotlin <em>compilation</em>, but KSP resolves its own source roots and missed them, so Hilt could not resolve <code>LauncherDatabase</code>. Fixed in <code>app/build.gradle.kts</code>: a <code>KspAATask.configureEach</code> block feeds each variant's <code>generate&lt;Variant&gt;LauncherDatabaseInterface</code> output into <code>kspConfig.sourceRoots</code> (guarded to skip test variants, which have no generate task). Also of note: the repository's write methods needed block bodies — SQLDelight queries return <code>QueryResult</code>, which leaked out of expression bodies as the interface's <code>Unit</code> return type.</p>
+    </details>
+
   </section>
 
 </main>

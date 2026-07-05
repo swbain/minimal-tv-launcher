@@ -4,6 +4,30 @@ plugins {
   alias(libs.plugins.kotlin.serialization)
   alias(libs.plugins.ksp)
   alias(libs.plugins.hilt.android)
+  alias(libs.plugins.sqldelight)
+}
+
+sqldelight {
+  databases {
+    create("LauncherDatabase") {
+      packageName.set("com.pavlovsfrog.minimaltvlauncher.db")
+    }
+  }
+}
+
+// SQLDelight 2.3.2 wires its generated sources into AGP 9's built-in Kotlin compilation, but
+// KSP resolves its own source roots and misses them — without this, Hilt cannot resolve
+// LauncherDatabase. The task.map provider carries the generate-task dependency along.
+tasks.withType(com.google.devtools.ksp.gradle.KspAATask::class.java).configureEach {
+  val variantName = name.removePrefix("ksp").removeSuffix("Kotlin")
+  val generateName = "generate${variantName}LauncherDatabaseInterface"
+  // Test variants (kspDebugUnitTestKotlin, …) have no generate task and don't need one:
+  // their compilations resolve LauncherDatabase from the main classes output.
+  if (generateName in tasks.names) {
+    val generateTask =
+      tasks.named(generateName, app.cash.sqldelight.gradle.SqlDelightTask::class.java)
+    kspConfig.sourceRoots.from(generateTask.map { it.outputDirectory })
+  }
 }
 
 android {
@@ -68,6 +92,11 @@ dependencies {
   // Dependency injection
   implementation(libs.hilt.android)
   ksp(libs.hilt.compiler)
+
+  // Persistence (hidden-apps visibility store)
+  implementation(libs.sqldelight.android.driver)
+  implementation(libs.sqldelight.coroutines.extensions)
+  testImplementation(libs.sqldelight.sqlite.driver)
 
   // Compose
   implementation(libs.androidx.compose.ui)
