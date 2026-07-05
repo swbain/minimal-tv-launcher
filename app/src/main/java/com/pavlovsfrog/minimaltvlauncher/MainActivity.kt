@@ -22,11 +22,13 @@ import androidx.tv.material3.SurfaceDefaults
 import com.pavlovsfrog.minimaltvlauncher.theme.MinimalTvLauncherTheme
 import com.pavlovsfrog.minimaltvlauncher.theme.NocturneColors
 import com.pavlovsfrog.minimaltvlauncher.ui.NocturneBackground
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-  private val viewModel: LauncherViewModel by viewModels { LauncherViewModel.Factory }
+  private val viewModel: LauncherViewModel by viewModels()
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)

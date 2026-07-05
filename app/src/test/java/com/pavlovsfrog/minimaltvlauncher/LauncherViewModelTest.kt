@@ -67,7 +67,7 @@ class LauncherViewModelTest {
   private val fixedNow = 1_782_255_660_000L
 
   private fun buildViewModel() =
-    LauncherViewModel(loader, weather, currentTimeMillis = { fixedNow })
+    LauncherViewModel(loader, weather, timeSource = { fixedNow })
 
   private fun runVmTest(block: suspend TestScope.(LauncherViewModel) -> Unit) =
     runTest(dispatcher) {
