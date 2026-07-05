@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -55,13 +56,16 @@ import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Border
 import androidx.tv.material3.Card
 import androidx.tv.material3.CardDefaults
+import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Glow
 import androidx.tv.material3.MaterialTheme
+import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import com.pavlovsfrog.minimaltvlauncher.theme.MinimalTvLauncherTheme
 import com.pavlovsfrog.minimaltvlauncher.theme.Newsreader
 import com.pavlovsfrog.minimaltvlauncher.theme.NocturneColors
+import com.pavlovsfrog.minimaltvlauncher.ui.AllAppsSettings
 import com.pavlovsfrog.minimaltvlauncher.ui.AppActionMenu
 import com.pavlovsfrog.minimaltvlauncher.ui.NocturneBackground
 import kotlinx.coroutines.delay
@@ -124,11 +128,28 @@ fun LauncherScreen(
   // so plain maps (not snapshot state) are correct here.
   val tileBounds = remember { HashMap<String, Rect>() }
   val tileFocus = remember { HashMap<String, FocusRequester>() }
+  val gearFocus = remember { FocusRequester() }
   val homeApps = (state.apps as? AppsUiState.Ready)?.apps ?: emptyList()
+  val allApps = (state.apps as? AppsUiState.Ready)?.allApps ?: emptyList()
+
+  // With no favorites there is no grid to autofocus — start the remote on the gear.
+  LaunchedEffect(homeApps.isEmpty(), allApps.isEmpty()) {
+    if (homeApps.isEmpty() && allApps.isNotEmpty()) {
+      runCatching { gearFocus.requestFocus() }
+    }
+  }
 
   Box(modifier = modifier.fillMaxSize()) {
+    val onOpenSettings = { onAction(LauncherAction.OpenSettings) }
     when (val apps = state.apps) {
-      AppsUiState.Loading -> MessageScreen(state.clock, state.weather, "Loading apps…")
+      AppsUiState.Loading ->
+        MessageScreen(
+          clock = state.clock,
+          weather = state.weather,
+          message = "Loading apps…",
+          onOpenSettings = onOpenSettings,
+          gearFocusRequester = gearFocus,
+        )
       is AppsUiState.Ready ->
         when {
           apps.apps.isNotEmpty() ->
@@ -138,6 +159,8 @@ fun LauncherScreen(
               apps = apps.apps,
               onAppClick = { onAction(LauncherAction.AppClicked(it)) },
               onAppLongPress = { onAction(LauncherAction.AppLongPressed(it)) },
+              onOpenSettings = onOpenSettings,
+              gearFocusRequester = gearFocus,
               tileBounds = tileBounds,
               tileFocus = tileFocus,
             )
@@ -148,21 +171,49 @@ fun LauncherScreen(
               weather = state.weather,
               message = "No favorites on this screen",
               subline = "Open Settings (⚙) to star the apps you want here",
+              onOpenSettings = onOpenSettings,
+              gearFocusRequester = gearFocus,
             )
-          else -> MessageScreen(state.clock, state.weather, "No apps installed")
+          else ->
+            MessageScreen(
+              clock = state.clock,
+              weather = state.weather,
+              message = "No apps installed",
+              onOpenSettings = onOpenSettings,
+              gearFocusRequester = gearFocus,
+            )
         }
     }
 
-    val overlay = state.overlay
-    if (overlay is Overlay.AppMenu) {
-      AppActionMenu(
-        app = overlay.app,
-        anchorBounds = tileBounds[overlay.app.packageName] ?: Rect.Zero,
-        onAction = onAction,
-      )
+    when (val overlay = state.overlay) {
+      is Overlay.AppMenu ->
+        AppActionMenu(
+          app = overlay.app,
+          anchorBounds = tileBounds[overlay.app.packageName] ?: Rect.Zero,
+          onAction = onAction,
+        )
+      Overlay.Settings ->
+        AllAppsSettings(allApps = allApps, onAction = onAction)
+      Overlay.None -> Unit
     }
 
-    MenuFocusRestorer(overlay = overlay, homeApps = homeApps, tileFocus = tileFocus)
+    MenuFocusRestorer(overlay = state.overlay, homeApps = homeApps, tileFocus = tileFocus)
+    SettingsFocusRestorer(overlay = state.overlay, gearFocus = gearFocus)
+  }
+}
+
+/** Puts the remote back on the gear when the settings takeover closes. */
+@Composable
+private fun SettingsFocusRestorer(overlay: Overlay, gearFocus: FocusRequester) {
+  var wasOpen by remember { mutableStateOf(false) }
+  LaunchedEffect(overlay) {
+    if (overlay == Overlay.Settings) {
+      wasOpen = true
+    } else if (wasOpen && overlay == Overlay.None) {
+      wasOpen = false
+      withFrameNanos {}
+      runCatching { gearFocus.requestFocus() }
+    }
   }
 }
 
@@ -172,10 +223,17 @@ private fun MessageScreen(
   clock: ClockUiState,
   weather: WeatherUiState,
   message: String,
+  onOpenSettings: () -> Unit,
+  gearFocusRequester: FocusRequester,
   subline: String? = null,
 ) {
   Column(modifier = Modifier.fillMaxSize().padding(horizontal = 50.dp, vertical = 37.dp)) {
-    NocturneHeader(clock = clock, weather = weather)
+    NocturneHeader(
+      clock = clock,
+      weather = weather,
+      onOpenSettings = onOpenSettings,
+      gearFocusRequester = gearFocusRequester,
+    )
     Box(modifier = Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
       Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(text = message, style = MessageStyle)
@@ -223,35 +281,78 @@ private fun MenuFocusRestorer(
   }
 }
 
-/** "Big clock hero" header (Weather Layouts variant B): time dominant, weather tucked beneath. */
+/**
+ * Space-between header: settings gear top-left, "Big clock hero" block (Weather Layouts
+ * variant B — time dominant, weather tucked beneath) top-right.
+ */
 @Composable
 private fun NocturneHeader(
   clock: ClockUiState,
   weather: WeatherUiState,
+  onOpenSettings: () -> Unit,
+  gearFocusRequester: FocusRequester,
   modifier: Modifier = Modifier,
 ) {
-  Column(modifier = modifier.fillMaxWidth(), horizontalAlignment = Alignment.End) {
-    Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-      Text(text = clock.time, style = TimeStyle, modifier = Modifier.alignByBaseline())
-      Text(text = clock.amPm, style = AmPmStyle, modifier = Modifier.alignByBaseline())
-    }
+  Row(
+    modifier = modifier.fillMaxWidth(),
+    horizontalArrangement = Arrangement.SpaceBetween,
+    verticalAlignment = Alignment.Top,
+  ) {
+    GearButton(onClick = onOpenSettings, focusRequester = gearFocusRequester)
 
-    Row(
-      verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.spacedBy(6.dp),
-      modifier = Modifier.padding(top = 2.dp, end = 2.dp),
-    ) {
-      if (weather is WeatherUiState.Ready) {
-        SunDot()
-        Text(
-          text = listOf(weather.tempText, weather.condition)
-            .filter { it.isNotEmpty() }
-            .joinToString(" "),
-          style = WeatherStyle,
-        )
-        SeparatorDot()
+    Column(horizontalAlignment = Alignment.End) {
+      Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+        Text(text = clock.time, style = TimeStyle, modifier = Modifier.alignByBaseline())
+        Text(text = clock.amPm, style = AmPmStyle, modifier = Modifier.alignByBaseline())
       }
-      Text(text = clock.date, style = DateStyle)
+
+      Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        modifier = Modifier.padding(top = 2.dp, end = 2.dp),
+      ) {
+        if (weather is WeatherUiState.Ready) {
+          SunDot()
+          Text(
+            text = listOf(weather.tempText, weather.condition)
+              .filter { it.isNotEmpty() }
+              .joinToString(" "),
+            style = WeatherStyle,
+          )
+          SeparatorDot()
+        }
+        Text(text = clock.date, style = DateStyle)
+      }
+    }
+  }
+}
+
+/** 37dp circular ⚙ button (design: 74px circle, 32px glyph). */
+@Composable
+private fun GearButton(onClick: () -> Unit, focusRequester: FocusRequester) {
+  Surface(
+    onClick = onClick,
+    shape = ClickableSurfaceDefaults.shape(CircleShape),
+    colors = ClickableSurfaceDefaults.colors(
+      containerColor = NocturneColors.GearFill,
+      contentColor = NocturneColors.TextWeather,
+      focusedContainerColor = NocturneColors.GearFill,
+      focusedContentColor = NocturneColors.TextWeather,
+      pressedContainerColor = NocturneColors.GearFill,
+      pressedContentColor = NocturneColors.TextWeather,
+    ),
+    border = ClickableSurfaceDefaults.border(
+      border = Border(BorderStroke(1.dp, NocturneColors.GearBorder)),
+      focusedBorder = Border(BorderStroke(2.dp, NocturneColors.Amber)),
+    ),
+    scale = ClickableSurfaceDefaults.scale(focusedScale = 1.08f),
+    modifier = Modifier
+      .size(37.dp)
+      .focusRequester(focusRequester)
+      .semantics { contentDescription = "Settings" },
+  ) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+      Text(text = "⚙", fontSize = 16.sp)
     }
   }
 }
@@ -295,6 +396,8 @@ private fun AppGrid(
   apps: List<AppInfo>,
   onAppClick: (AppInfo) -> Unit,
   onAppLongPress: (AppInfo) -> Unit,
+  onOpenSettings: () -> Unit,
+  gearFocusRequester: FocusRequester,
   tileBounds: MutableMap<String, Rect>,
   tileFocus: MutableMap<String, FocusRequester>,
 ) {
@@ -316,7 +419,13 @@ private fun AppGrid(
     // The header rides in the scroll flow and scrolls away with the content.
     // 15dp + the 20dp row gap = the design's 70px (35dp) header→grid spacing.
     item(key = "header", span = { GridItemSpan(maxLineSpan) }) {
-      NocturneHeader(clock = clock, weather = weather, modifier = Modifier.padding(bottom = 15.dp))
+      NocturneHeader(
+        clock = clock,
+        weather = weather,
+        onOpenSettings = onOpenSettings,
+        gearFocusRequester = gearFocusRequester,
+        modifier = Modifier.padding(bottom = 15.dp),
+      )
     }
     itemsIndexed(apps, key = { _, app -> app.componentName.flattenToString() }) { index, app ->
       val focusRequester = remember { FocusRequester() }

@@ -54,4 +54,22 @@ object NocturneColors {
 
   /** Destructive glyph (Uninstall ✕). */
   val DangerText = Color(0xFFFF9D97)
+
+  /** Header gear circle fill — rgba(14,15,20,0.55). */
+  val GearFill = Color(0xFF0E0F14).copy(alpha = 0.55f)
+
+  /** Header gear circle border. */
+  val GearBorder = Color.White.copy(alpha = 0.14f)
+
+  /** Full-screen settings takeover surface — rgba(8,9,12,0.97). */
+  val SettingsSurface = Color(0xFF08090C).copy(alpha = 0.97f)
+
+  /** Unstarred (hidden) star glyph ☆. */
+  val StarOff = Color(0xFF5A5E68)
+
+  /** Focused settings-row background. */
+  val RowFocusFill = Color.White.copy(alpha = 0.09f)
+
+  /** App name on a hidden settings row. */
+  val TextDimmed = Color(0xFF8A8E99)
 }

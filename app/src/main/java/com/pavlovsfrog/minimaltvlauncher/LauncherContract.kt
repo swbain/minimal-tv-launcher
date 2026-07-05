@@ -62,6 +62,12 @@ sealed interface LauncherAction {
 
   data class UninstallApp(val app: AppInfo) : LauncherAction
 
+  data object OpenSettings : LauncherAction
+
+  data object CloseSettings : LauncherAction
+
+  data class ToggleFavorite(val packageName: String) : LauncherAction
+
   data object ScreenResumed : LauncherAction
 
   data object LaunchFailed : LauncherAction
