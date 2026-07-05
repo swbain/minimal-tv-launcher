@@ -65,6 +65,17 @@ class LauncherViewModel @Inject constructor(
         _state.update { it.copy(overlay = Overlay.None) }
         _events.tryEmit(LauncherEvent.RequestUninstall(action.app.packageName))
       }
+      LauncherAction.OpenSettings -> _state.update { it.copy(overlay = Overlay.Settings) }
+      LauncherAction.CloseSettings -> _state.update { it.copy(overlay = Overlay.None) }
+      is LauncherAction.ToggleFavorite -> {
+        val entry = (state.value.apps as? AppsUiState.Ready)
+          ?.allApps?.firstOrNull { it.app.packageName == action.packageName }
+          ?: return
+        viewModelScope.launch {
+          // Favoriting means un-hiding: hidden is the inverse of isFavorite.
+          visibilityRepository.setHidden(action.packageName, hidden = entry.isFavorite)
+        }
+      }
       LauncherAction.ScreenResumed -> {
         // Snap the clock immediately (the TV may have slept past many ticks or changed zone).
         _state.update { it.copy(clock = ClockFormatter.format(timeSource.nowMillis())) }

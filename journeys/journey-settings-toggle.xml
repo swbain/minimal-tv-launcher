@@ -1,0 +1,42 @@
+<journey name="Settings star toggle">
+  <description>
+    The header gear opens a full-screen two-column all-apps list. Unstarring an app dims its
+    row and removes it from home; re-starring restores it. Toggles persist across a full
+    app restart.
+  </description>
+  <actions>
+    <action>
+      Launch the Nocturne launcher (com.pavlovsfrog.minimaltvlauncher) and verify the app
+      grid is shown and a gear (Settings) button is present in the top-left of the header.
+    </action>
+    <action>
+      Move focus to the gear button and press OK.
+    </action>
+    <action>
+      Verify a full-screen settings surface appears with a "‹ Back" pill, an "Apps" title,
+      a subtitle of the form "{n} of {m} on home · press to star or unstar", and a
+      two-column list of all installed apps where visible apps show a filled star and
+      hidden apps show a hollow star with a dimmed name.
+    </action>
+    <action>
+      Note the name of the first row's app and its subtitle count, then press OK on the row.
+    </action>
+    <action>
+      Verify the row's star flips to hollow, its name dims, the subtitle count drops by one,
+      and focus stays on the row.
+    </action>
+    <action>
+      Press Back and verify home is shown again with that app no longer on the grid.
+    </action>
+    <action>
+      Open settings again via the gear, press OK on the same row to re-star it, and verify
+      the star fills and the subtitle count rises by one.
+    </action>
+    <action>
+      Close settings and verify the app is back on the home grid.
+    </action>
+    <action>
+      Force-stop and relaunch the launcher; verify the grid still shows the re-starred app.
+    </action>
+  </actions>
+</journey>

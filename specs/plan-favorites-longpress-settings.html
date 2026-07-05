@@ -112,11 +112,11 @@
       <summary>Metadata</summary>
       <dl>
         <dt>created</dt>      <dd>2026-07-05T17:31:48-0500</dd>
-        <dt>modified</dt>     <dd>2026-07-05T17:31:48-0500</dd>
-        <dt>commits</dt>      <dd>e876cf9</dd>
-        <dt>branches</dt>     <dd>settings-rework</dd>
-        <dt>agent name</dt>   <dd>Claude Fable 5 (claude-fable-5)</dd>
-        <dt>session id</dt>   <dd>0581eddf (background job)</dd>
+        <dt>modified</dt>     <dd>2026-07-05T17:31:48-0500, 2026-07-05T18:40:07-0500, 2026-07-05T19:05:00-0500</dd>
+        <dt>commits</dt>      <dd>e876cf9, 5b4d898, 350a547, dec7ae5, 4a6006c, 69f7110</dd>
+        <dt>branches</dt>     <dd>settings-rework, hilt-di, sqldelight-visibility, longpress-menu, all-apps-settings</dd>
+        <dt>agent name</dt>   <dd>Claude Fable 5 (claude-fable-5), Claude Fable 5 (claude-fable-5)</dd>
+        <dt>session id</dt>   <dd>0581eddf (background job), 0581eddf (build run)</dd>
         <dt>back refs</dt>    <dd>claude.ai/design project 50077339-6d83-4127-8716-f956abd14bd2 (design_handoff_tv_launcher_favorites/README.md — option 2c is the spec; screenshots 01-2c…04-2c), specs/plan-nocturne-tv-launcher.html (built the launcher this plan extends)</dd>
         <dt>forward refs</dt> <dd>—</dd>
       </dl>
@@ -326,32 +326,32 @@
     </div>
 
     <div class="phase">
-      <h3><code class="status">[]</code> Phase 4: Gear button + all-apps settings list (branch <code>all-apps-settings</code>, PR 5)</h3>
+      <h3><code class="status">[wip]</code> Phase 4: Gear button + all-apps settings list (branch <code>all-apps-settings</code>, PR 5)</h3>
       <p>Design §4: header becomes space-between (gear top-left, clock block top-right — clock styling untouched), and the gear opens a full-screen takeover listing every installed app in two columns, star = on home. Toggles persist immediately through <code>VisibilityRepository</code>; the home grid is already reactive to that flow, so returning simply reveals the result.</p>
 
       <h4>4.1. Header gear</h4>
       <ul class="checklist">
-        <li><code class="status">[]</code> Restructure <code>NocturneHeader</code> into a space-between <code>Row</code>: gear left (37dp circle, bg <code>rgba(14,15,20,0.55)</code>, border <code>rgba(255,255,255,0.14)</code>, ⚙ glyph 16sp <code>#e6e9ee</code>; focused: scale 1.08 + amber ring), existing clock/weather column right</li>
-        <li><code class="status">[]</code> Focus order: D-pad up from the grid's top row reaches the gear (verify default column-based focus; add <code>focusProperties { up }</code> only if needed); down from gear returns to the first tile; when home is empty, initial focus goes to the gear instead of the grid</li>
-        <li><code class="status">[]</code> Gear click → <code>OpenSettings</code> action → <code>Overlay.Settings</code></li>
+        <li><code class="status">[x]</code> Restructure <code>NocturneHeader</code> into a space-between <code>Row</code>: gear left (37dp circle, bg <code>rgba(14,15,20,0.55)</code>, border <code>rgba(255,255,255,0.14)</code>, ⚙ glyph 16sp <code>#e6e9ee</code>; focused: scale 1.08 + amber ring), existing clock/weather column right</li>
+        <li><code class="status">[x]</code> Focus order: D-pad up from the grid's top row reaches the gear (verify default column-based focus; add <code>focusProperties { up }</code> only if needed); down from gear returns to the first tile; when home is empty, initial focus goes to the gear instead of the grid</li>
+        <li><code class="status">[x]</code> Gear click → <code>OpenSettings</code> action → <code>Overlay.Settings</code></li>
       </ul>
 
       <h4>4.2. Settings surface (<code>ui/AllAppsSettings.kt</code>)</h4>
       <ul class="checklist">
-        <li><code class="status">[]</code> Contract: actions <code>OpenSettings</code>, <code>CloseSettings</code>, <code>ToggleFavorite(packageName)</code>; VM: toggle flips via <code>setHidden(pkg, !currentlyHidden)</code>, no confirm; close → <code>Overlay.None</code></li>
-        <li><code class="status">[]</code> Surface: full-screen <code>rgba(8,9,12,0.97)</code>, fade-in 200ms, padding 32dp×55dp; header row: back pill ("‹ Back", 999-radius, hairline border), title "Apps" 17sp w600, subtitle "<em>{favCount} of {total} on home · press to star or unstar</em>" 10sp italic; omit the prototype's "Reset demo data" link</li>
-        <li><code class="status">[]</code> List: <code>LazyVerticalGrid(Fixed(2))</code>, gaps 4dp vertical × 32dp horizontal, fed from <code>allApps</code> (row-major = grid default); row: 25dp app chip (banner/icon or letter fallback, 6dp radius), name 13.5sp, star ★ (amber) / ☆ (<code>#5a5e68</code>); hidden rows dim chip to 42% and name to <code>#8a8e99</code>; focused row: bg <code>rgba(255,255,255,0.09)</code> + 1dp inset amber ring</li>
-        <li><code class="status">[]</code> Focus &amp; keys: on open, focus first row; D-pad left/right hops columns, up/down within, no wrap; OK toggles the star in place (focus stays on the row); <code>BackHandler</code> + back pill close; on close, focus the gear (home already reflects toggles; if favorites became empty, empty state + gear focus is the Phase 2/4.1 behavior)</li>
-        <li><code class="status">[]</code> Uninstalled-app hygiene: rows come from <code>allApps</code> (installed only), so uninstalled apps never appear — no extra work, but verify in the journey</li>
+        <li><code class="status">[x]</code> Contract: actions <code>OpenSettings</code>, <code>CloseSettings</code>, <code>ToggleFavorite(packageName)</code>; VM: toggle flips via <code>setHidden(pkg, !currentlyHidden)</code>, no confirm; close → <code>Overlay.None</code></li>
+        <li><code class="status">[x]</code> Surface: full-screen <code>rgba(8,9,12,0.97)</code>, fade-in 200ms, padding 32dp×55dp; header row: back pill ("‹ Back", 999-radius, hairline border), title "Apps" 17sp w600, subtitle "<em>{favCount} of {total} on home · press to star or unstar</em>" 10sp italic; omit the prototype's "Reset demo data" link</li>
+        <li><code class="status">[x]</code> List: <code>LazyVerticalGrid(Fixed(2))</code>, gaps 4dp vertical × 32dp horizontal, fed from <code>allApps</code> (row-major = grid default); row: 25dp app chip (banner/icon or letter fallback, 6dp radius), name 13.5sp, star ★ (amber) / ☆ (<code>#5a5e68</code>); hidden rows dim chip to 42% and name to <code>#8a8e99</code>; focused row: bg <code>rgba(255,255,255,0.09)</code> + 1dp inset amber ring</li>
+        <li><code class="status">[x]</code> Focus &amp; keys: on open, focus first row; D-pad left/right hops columns, up/down within, no wrap; OK toggles the star in place (focus stays on the row); <code>BackHandler</code> + back pill close; on close, focus the gear (home already reflects toggles; if favorites became empty, empty state + gear focus is the Phase 2/4.1 behavior)</li>
+        <li><code class="status">[x]</code> Uninstalled-app hygiene: rows come from <code>allApps</code> (installed only), so uninstalled apps never appear — no extra work, but verify in the journey</li>
       </ul>
 
       <h4>4.3. Testing Strategy</h4>
       <p>Toggle/count logic in JVM tests; the two-column focus walk, dimming, and persistence-across-return in a journey. Screenshots into <code>specs/plan-favorites-longpress-settings/</code>.</p>
       <ul class="checklist">
-        <li><code class="status">[]</code> <code>LauncherViewModelTest</code> additions: OpenSettings/CloseSettings overlay transitions; ToggleFavorite flips hidden state and favCount; toggling while settings open leaves overlay open — <code>./gradlew :app:testDebugUnitTest</code></li>
-        <li><code class="status">[]</code> <code>./gradlew :app:assembleDebug :app:lintDebug</code> — build + lint clean</li>
-        <li><code class="status">[]</code> Evaluate <code>journeys/journey-settings-toggle.xml</code> on the TV emulator — gear opens the two-column list with correct "{n} of {m} on home" subtitle; unstar dims the row; Back → app gone from home; reopen + restar → app returns; kill + relaunch → state persisted — all actions PASSED</li>
-        <li><code class="status">[]</code> <code>gt create all-apps-settings -am "feat: gear-opened all-apps settings with favorite star toggles"</code> then <code>gt submit --stack --no-interactive -d</code> — PR 5 up, stack complete</li>
+        <li><code class="status">[x]</code> <code>LauncherViewModelTest</code> additions: OpenSettings/CloseSettings overlay transitions; ToggleFavorite flips hidden state and favCount; toggling while settings open leaves overlay open — <code>./gradlew :app:testDebugUnitTest</code></li>
+        <li><code class="status">[x]</code> <code>./gradlew :app:assembleDebug :app:lintDebug</code> — build + lint clean</li>
+        <li><code class="status">[x]</code> Evaluate <code>journeys/journey-settings-toggle.xml</code> on the TV emulator — gear opens the two-column list with correct "{n} of {m} on home" subtitle; unstar dims the row; Back → app gone from home; reopen + restar → app returns; kill + relaunch → state persisted — all actions PASSED</li>
+        <li><code class="status">[x]</code> <code>gt create all-apps-settings -am "feat: gear-opened all-apps settings with favorite star toggles"</code> then <code>gt submit --stack --no-interactive -d</code> — PR 5 up, stack complete</li>
       </ul>
       <div class="loop">
         🔁 <strong>Do not exit this phase until every box above is checked.</strong>
@@ -365,12 +365,12 @@
     <h2>Validation Commands</h2>
     <p>Execute these commands to validate the entire plan is complete (from the top of the stack, <code>all-apps-settings</code>):</p>
     <ul class="checklist">
-      <li><code class="status">[]</code> <code>./gradlew :app:assembleDebug</code> — full build with Hilt + SQLDelight codegen</li>
-      <li><code class="status">[]</code> <code>./gradlew :app:testDebugUnitTest</code> — all JVM tests (existing + repository + state machine) green</li>
-      <li><code class="status">[]</code> <code>./gradlew :app:lintDebug</code> — lint clean</li>
-      <li><code class="status">[]</code> <code>./gradlew :app:connectedDebugAndroidTest</code> — the pre-existing instrumented smoke test still passes (default state shows all apps, so favorites filtering must not break it); TV emulator via <code>android emulator start</code></li>
-      <li><code class="status">[]</code> Re-evaluate all three journeys in <code>journeys/</code> back-to-back on one emulator session — all PASSED, screenshots refreshed in <code>specs/plan-favorites-longpress-settings/</code></li>
-      <li><code class="status">[]</code> <code>gt log short</code> — five tracked branches in the expected parent chain; <code>gt submit --stack --no-interactive -u</code> — every PR up to date; mark PRs ready-for-review with <code>gh pr ready</code> when the user says go</li>
+      <li><code class="status">[x]</code> <code>./gradlew :app:assembleDebug</code> — full build with Hilt + SQLDelight codegen</li>
+      <li><code class="status">[x]</code> <code>./gradlew :app:testDebugUnitTest</code> — all JVM tests (existing + repository + state machine) green</li>
+      <li><code class="status">[x]</code> <code>./gradlew :app:lintDebug</code> — lint clean</li>
+      <li><code class="status">[x]</code> <code>./gradlew :app:connectedDebugAndroidTest</code> — the pre-existing instrumented smoke test still passes (default state shows all apps, so favorites filtering must not break it); TV emulator via <code>android emulator start</code></li>
+      <li><code class="status">[x]</code> Re-evaluate all three journeys in <code>journeys/</code> back-to-back on one emulator session — all PASSED, screenshots refreshed in <code>specs/plan-favorites-longpress-settings/</code></li>
+      <li><code class="status">[x]</code> <code>gt log short</code> — five tracked branches in the expected parent chain; <code>gt submit --stack --no-interactive -u</code> — every PR up to date; mark PRs ready-for-review with <code>gh pr ready</code> when the user says go</li>
     </ul>
     <div class="loop">
       🔁 <strong>The plan is not complete until every box is checked and every command passes. If for some reason a step is not possible to complete, mark it with [f] and move on if possible.</strong>
@@ -497,6 +497,14 @@
     <details>
       <summary>2026-07-05 — Phase 3: OK-release guard reworked around repeatCount</summary>
       <p>The planned "ignore onClick until first key-up after the menu opens" guard ate the first real press whenever the long-press release arrived before the overlay finished composing (which is how adb injects it, and can happen with fast real remotes too). Reworked: swallow auto-repeat key-downs (<code>repeatCount &gt; 0</code>) and any key-up not preceded by a fresh key-down since the menu opened — handles both event orderings. Verified on-device via the hide journey.</p>
+    </details>
+    <details>
+      <summary>2026-07-05 — Build complete: all five PRs up as a Graphite stack</summary>
+      <p>All phases executed and validated. Draft PRs on github.com/swbain/minimal-tv-launcher: #3 (spec), #4 (hilt-di), #5 (sqldelight-visibility), #6 (longpress-menu), #7 (all-apps-settings). Final gates: 50 JVM tests, lint, 3 instrumented smoke tests, and all three journeys re-evaluated back-to-back on the final build — all green. Emulator note for this headless host: the <code>android emulator start</code> wrapper dies on Qt/KVM here; use the raw emulator binary with <code>-no-window</code> under <code>sg kvm</code>, then drive journeys via adb key events + <code>android layout</code>.</p>
+    </details>
+    <details>
+      <summary>2026-07-05 — Restacked onto merged scroll-fix (main moved under the stack)</summary>
+      <p>scroll-fix (PR #2) had merged to origin/main 40 minutes <em>before</em> this build started, but local main was stale, so the stack was built one commit behind. Resolution: pulled main in the sibling worktree, then <code>gt sync -f</code> restacked all five branches (three <code>LauncherScreen.kt</code> conflicts, resolved per-branch so every PR still compiles standalone). Semantic merge: adopted scroll-fix's full-screen scroll surface — the header (now carrying the ⚙ gear) rides in the grid as a full-span item and <strong>scrolls away with content</strong>; <code>MessageScreen</code> absorbed the empty-favorites copy and carries the gear so settings stays reachable on empty screens. Re-validated: 50 unit tests, lint, 3 instrumented tests, and emulator spot-checks (header scrolls away and returns, action row flips above bottom-edge tiles, settings round-trip restores gear focus) — all green; all PRs mergeable.</p>
     </details>
 
   </section>

@@ -327,6 +327,53 @@ class LauncherViewModelTest {
   }
 
   @Test
+  fun `OpenSettings and CloseSettings drive the overlay`() = runVmTest { viewModel ->
+    loader.apps = listOf(appInfo("cinema"))
+    dispatcher.scheduler.runCurrent()
+
+    viewModel.onAction(LauncherAction.OpenSettings)
+    assertEquals(Overlay.Settings, viewModel.state.value.overlay)
+
+    viewModel.onAction(LauncherAction.CloseSettings)
+    assertEquals(Overlay.None, viewModel.state.value.overlay)
+  }
+
+  @Test
+  fun `ToggleFavorite flips hidden state both ways and updates favCount`() = runVmTest { viewModel ->
+    val cinema = appInfo("cinema")
+    val music = appInfo("music")
+    loader.apps = listOf(cinema, music)
+    dispatcher.scheduler.runCurrent()
+
+    viewModel.onAction(LauncherAction.ToggleFavorite(cinema.packageName))
+    dispatcher.scheduler.runCurrent()
+
+    var ready = viewModel.state.value.apps as AppsUiState.Ready
+    assertEquals(listOf(cinema.packageName to true), visibility.setHiddenCalls)
+    assertEquals(1, ready.allApps.count { it.isFavorite })
+
+    viewModel.onAction(LauncherAction.ToggleFavorite(cinema.packageName))
+    dispatcher.scheduler.runCurrent()
+
+    ready = viewModel.state.value.apps as AppsUiState.Ready
+    assertEquals(cinema.packageName to false, visibility.setHiddenCalls.last())
+    assertEquals(2, ready.allApps.count { it.isFavorite })
+  }
+
+  @Test
+  fun `toggling while settings is open leaves the overlay open`() = runVmTest { viewModel ->
+    val cinema = appInfo("cinema")
+    loader.apps = listOf(cinema)
+    dispatcher.scheduler.runCurrent()
+    viewModel.onAction(LauncherAction.OpenSettings)
+
+    viewModel.onAction(LauncherAction.ToggleFavorite(cinema.packageName))
+    dispatcher.scheduler.runCurrent()
+
+    assertEquals(Overlay.Settings, viewModel.state.value.overlay)
+  }
+
+  @Test
   fun `ScreenResumed reloads apps and refreshes weather`() = runVmTest { viewModel ->
     dispatcher.scheduler.runCurrent()
     assertEquals(WeatherUiState.Hidden, viewModel.state.value.weather)
