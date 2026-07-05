@@ -6,6 +6,8 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
 import androidx.core.graphics.drawable.toBitmap
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -15,7 +17,7 @@ fun interface AppsLoader {
 }
 
 /** Loads the list of launchable apps installed on the device. */
-class AppsRepository(context: Context) : AppsLoader {
+class AppsRepository @Inject constructor(@ApplicationContext context: Context) : AppsLoader {
 
   private val appContext = context.applicationContext
   private val packageManager: PackageManager = appContext.packageManager

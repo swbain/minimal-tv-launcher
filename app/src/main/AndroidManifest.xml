@@ -27,6 +27,7 @@
     </queries>
 
     <application
+        android:name=".NocturneApplication"
         android:allowBackup="true"
         android:banner="@drawable/banner"
         android:icon="@mipmap/ic_launcher"

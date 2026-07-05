@@ -2,6 +2,8 @@ plugins {
   alias(libs.plugins.android.application)
   alias(libs.plugins.compose.compiler)
   alias(libs.plugins.kotlin.serialization)
+  alias(libs.plugins.ksp)
+  alias(libs.plugins.hilt.android)
 }
 
 android {
@@ -62,6 +64,10 @@ dependencies {
   // Arch Components
   implementation(libs.androidx.lifecycle.runtime.compose)
   implementation(libs.androidx.lifecycle.viewmodel.compose)
+
+  // Dependency injection
+  implementation(libs.hilt.android)
+  ksp(libs.hilt.compiler)
 
   // Compose
   implementation(libs.androidx.compose.ui)

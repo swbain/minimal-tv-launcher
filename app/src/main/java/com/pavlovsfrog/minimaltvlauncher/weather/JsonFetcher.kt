@@ -2,6 +2,7 @@ package com.pavlovsfrog.minimaltvlauncher.weather
 
 import java.io.IOException
 import java.util.concurrent.TimeUnit
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -18,7 +19,7 @@ fun interface JsonFetcher {
 internal val WeatherJson = Json { ignoreUnknownKeys = true }
 
 /** Production [JsonFetcher] backed by one shared [OkHttpClient]. */
-class OkHttpJsonFetcher : JsonFetcher {
+class OkHttpJsonFetcher @Inject constructor() : JsonFetcher {
 
   private val client =
     OkHttpClient.Builder()

@@ -217,33 +217,33 @@
     </div>
 
     <div class="phase">
-      <h3><code class="status">[]</code> Phase 1: Hilt DI foundation (branch <code>hilt-di</code>, PR 2)</h3>
+      <h3><code class="status">[wip]</code> Phase 1: Hilt DI foundation (branch <code>hilt-di</code>, PR 2)</h3>
       <p>Replace the hand-rolled <code>viewModelFactory</code> with Hilt. Strictly a construction refactor: zero behavior change, all existing unit tests must pass untouched (they already constructor-inject fakes). The one contract tweak: Dagger can't inject a defaulted <code>() -&gt; Long</code> parameter, so the clock seam becomes <code>fun interface TimeSource</code> (tests keep passing lambdas via SAM conversion).</p>
 
       <h4>1.1. Gradle wiring</h4>
       <ul class="checklist">
-        <li><code class="status">[]</code> <code>libs.versions.toml</code>: add <code>hilt</code> (latest stable ≥ 2.57 — resolve on Maven Central; must declare AGP 9 support) and <code>ksp</code> (release matching Kotlin 2.3.20 from github.com/google/ksp/releases); plugins <code>com.google.dagger.hilt.android</code> + <code>com.google.devtools.ksp</code>; libraries <code>hilt-android</code> + <code>hilt-compiler</code></li>
-        <li><code class="status">[]</code> Root <code>build.gradle.kts</code>: register both plugins <code>apply false</code>; <code>app/build.gradle.kts</code>: apply both, add <code>implementation(libs.hilt.android)</code> + <code>ksp(libs.hilt.compiler)</code></li>
-        <li><code class="status">[]</code> Sync/compile check: <code>./gradlew :app:assembleDebug</code>. If the Hilt Gradle plugin fails against AGP 9.2.1, bump Hilt to the newest release before considering anything else (see Questionables)</li>
+        <li><code class="status">[x]</code> <code>libs.versions.toml</code>: add <code>hilt</code> (latest stable ≥ 2.57 — resolve on Maven Central; must declare AGP 9 support) and <code>ksp</code> (release matching Kotlin 2.3.20 from github.com/google/ksp/releases); plugins <code>com.google.dagger.hilt.android</code> + <code>com.google.devtools.ksp</code>; libraries <code>hilt-android</code> + <code>hilt-compiler</code></li>
+        <li><code class="status">[x]</code> Root <code>build.gradle.kts</code>: register both plugins <code>apply false</code>; <code>app/build.gradle.kts</code>: apply both, add <code>implementation(libs.hilt.android)</code> + <code>ksp(libs.hilt.compiler)</code></li>
+        <li><code class="status">[x]</code> Sync/compile check: <code>./gradlew :app:assembleDebug</code>. If the Hilt Gradle plugin fails against AGP 9.2.1, bump Hilt to the newest release before considering anything else (see Questionables)</li>
       </ul>
 
       <h4>1.2. Annotate and modularize</h4>
       <ul class="checklist">
-        <li><code class="status">[]</code> New <code>NocturneApplication</code> with <code>@HiltAndroidApp</code>; manifest <code>&lt;application android:name=".NocturneApplication" …&gt;</code></li>
-        <li><code class="status">[]</code> New <code>TimeSource.kt</code> (<code>fun interface</code>, production impl <code>System.currentTimeMillis()</code>); switch <code>LauncherViewModel</code>'s third constructor param from <code>() -&gt; Long</code> to <code>TimeSource</code> and update <code>LauncherViewModelTest</code> call sites (lambda syntax unchanged thanks to SAM)</li>
-        <li><code class="status">[]</code> <code>AppsRepository</code>: <code>@Inject constructor(@ApplicationContext context: Context)</code>; <code>OkHttpJsonFetcher</code> + <code>WeatherRepository</code>: add <code>@Inject constructor</code> as needed</li>
-        <li><code class="status">[]</code> New <code>di/AppModule.kt</code>: <code>@Binds</code> <code>AppsRepository → AppsLoader</code>, <code>WeatherRepository → WeatherProvider</code>, <code>OkHttpJsonFetcher → JsonFetcher</code>; <code>@Provides</code> <code>TimeSource</code>; all <code>@Singleton</code> in <code>SingletonComponent</code></li>
-        <li><code class="status">[]</code> <code>LauncherViewModel</code>: <code>@HiltViewModel class … @Inject constructor(…)</code>; delete the <code>Factory</code> val from the companion object (keep <code>TAG</code>); <code>MainActivity</code>: <code>@AndroidEntryPoint</code>, plain <code>by viewModels()</code></li>
+        <li><code class="status">[x]</code> New <code>NocturneApplication</code> with <code>@HiltAndroidApp</code>; manifest <code>&lt;application android:name=".NocturneApplication" …&gt;</code></li>
+        <li><code class="status">[x]</code> New <code>TimeSource.kt</code> (<code>fun interface</code>, production impl <code>System.currentTimeMillis()</code>); switch <code>LauncherViewModel</code>'s third constructor param from <code>() -&gt; Long</code> to <code>TimeSource</code> and update <code>LauncherViewModelTest</code> call sites (lambda syntax unchanged thanks to SAM)</li>
+        <li><code class="status">[x]</code> <code>AppsRepository</code>: <code>@Inject constructor(@ApplicationContext context: Context)</code>; <code>OkHttpJsonFetcher</code> + <code>WeatherRepository</code>: add <code>@Inject constructor</code> as needed</li>
+        <li><code class="status">[x]</code> New <code>di/AppModule.kt</code>: <code>@Binds</code> <code>AppsRepository → AppsLoader</code>, <code>WeatherRepository → WeatherProvider</code>, <code>OkHttpJsonFetcher → JsonFetcher</code>; <code>@Provides</code> <code>TimeSource</code>; all <code>@Singleton</code> in <code>SingletonComponent</code></li>
+        <li><code class="status">[x]</code> <code>LauncherViewModel</code>: <code>@HiltViewModel class … @Inject constructor(…)</code>; delete the <code>Factory</code> val from the companion object (keep <code>TAG</code>); <code>MainActivity</code>: <code>@AndroidEntryPoint</code>, plain <code>by viewModels()</code></li>
       </ul>
 
       <h4>1.3. Testing Strategy</h4>
       <p>Gradle quality gates plus a live boot check on the TV emulator (a DI refactor's classic failure mode is a runtime crash at injection, invisible to unit tests). No new UI tests — journeys convention.</p>
       <ul class="checklist">
-        <li><code class="status">[]</code> <code>./gradlew :app:assembleDebug</code> — Hilt codegen + bytecode transform succeed under AGP 9.2.1</li>
-        <li><code class="status">[]</code> <code>./gradlew :app:testDebugUnitTest</code> — all existing tests green with the <code>TimeSource</code> rename, no other edits</li>
-        <li><code class="status">[]</code> <code>./gradlew :app:lintDebug</code> — clean</li>
-        <li><code class="status">[]</code> <code>android emulator start &lt;tv-avd&gt;</code> + <code>android run</code> + <code>android screen capture</code> — launcher boots and renders the grid (no <code>@AndroidEntryPoint</code>/missing-binding crash)</li>
-        <li><code class="status">[]</code> <code>gt create hilt-di -am "refactor: introduce Hilt DI (no behavior change)"</code> then <code>gt submit --stack --no-interactive -d</code> — PR 2 up</li>
+        <li><code class="status">[x]</code> <code>./gradlew :app:assembleDebug</code> — Hilt codegen + bytecode transform succeed under AGP 9.2.1</li>
+        <li><code class="status">[x]</code> <code>./gradlew :app:testDebugUnitTest</code> — all existing tests green with the <code>TimeSource</code> rename, no other edits</li>
+        <li><code class="status">[x]</code> <code>./gradlew :app:lintDebug</code> — clean</li>
+        <li><code class="status">[x]</code> <code>android emulator start &lt;tv-avd&gt;</code> + <code>android run</code> + <code>android screen capture</code> — launcher boots and renders the grid (no <code>@AndroidEntryPoint</code>/missing-binding crash)</li>
+        <li><code class="status">[x]</code> <code>gt create hilt-di -am "refactor: introduce Hilt DI (no behavior change)"</code> then <code>gt submit --stack --no-interactive -d</code> — PR 2 up</li>
       </ul>
       <div class="loop">
         🔁 <strong>Do not exit this phase until every box above is checked.</strong>

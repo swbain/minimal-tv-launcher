@@ -2,14 +2,11 @@ package com.pavlovsfrog.minimaltvlauncher
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
-import com.pavlovsfrog.minimaltvlauncher.weather.OkHttpJsonFetcher
 import com.pavlovsfrog.minimaltvlauncher.weather.WeatherProvider
-import com.pavlovsfrog.minimaltvlauncher.weather.WeatherRepository
 import com.pavlovsfrog.minimaltvlauncher.weather.WmoWeatherCode
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -21,10 +18,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class LauncherViewModel(
+@HiltViewModel
+class LauncherViewModel @Inject constructor(
   private val appsLoader: AppsLoader,
   private val weatherRepository: WeatherProvider,
-  private val currentTimeMillis: () -> Long = System::currentTimeMillis,
+  private val timeSource: TimeSource,
 ) : ViewModel() {
 
   private val _state = MutableStateFlow(LauncherState())
@@ -47,7 +45,7 @@ class LauncherViewModel(
         _events.tryEmit(LauncherEvent.LaunchApp(action.app.componentName))
       LauncherAction.ScreenResumed -> {
         // Snap the clock immediately (the TV may have slept past many ticks or changed zone).
-        _state.update { it.copy(clock = ClockFormatter.format(currentTimeMillis())) }
+        _state.update { it.copy(clock = ClockFormatter.format(timeSource.nowMillis())) }
         reloadApps()
         refreshWeather()
       }
@@ -66,7 +64,7 @@ class LauncherViewModel(
   private fun startClockTicker() {
     viewModelScope.launch {
       while (true) {
-        val now = currentTimeMillis()
+        val now = timeSource.nowMillis()
         _state.update { it.copy(clock = ClockFormatter.format(now)) }
         delay(60_000 - now % 60_000)
       }
@@ -109,16 +107,5 @@ class LauncherViewModel(
 
   companion object {
     private const val TAG = "LauncherViewModel"
-
-    val Factory: ViewModelProvider.Factory = viewModelFactory {
-      initializer {
-        val application =
-          checkNotNull(this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY])
-        LauncherViewModel(
-          appsLoader = AppsRepository(application),
-          weatherRepository = WeatherRepository(OkHttpJsonFetcher()),
-        )
-      }
-    }
   }
 }
