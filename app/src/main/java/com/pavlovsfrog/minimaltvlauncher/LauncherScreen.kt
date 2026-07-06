@@ -3,11 +3,13 @@
 package com.pavlovsfrog.minimaltvlauncher
 
 import android.content.ComponentName
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,6 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -44,6 +47,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -51,6 +59,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -122,6 +131,13 @@ private val MessageStyle = TextStyle(
   color = NocturneColors.TextMuted,
 )
 
+// Move-mode hint pill: sans-serif utility type (design §3, 19px ÷ 2 ≈ 9.5sp).
+private val HintPillStyle = TextStyle(
+  fontFamily = FontFamily.SansSerif,
+  fontSize = 9.5.sp,
+  color = NocturneColors.TextSecondary,
+)
+
 @Composable
 fun LauncherScreen(
   state: LauncherState,
@@ -157,7 +173,36 @@ fun LauncherScreen(
     label = "contentReveal",
   )
 
-  Box(modifier = modifier.fillMaxSize()) {
+  // Move mode: OK/Back drop the tile; auto-repeat D-pad is allowed for fast dragging.
+  val reordering = state.reordering
+  BackHandler(enabled = reordering != null) { onAction(LauncherAction.CommitMove) }
+  // Keep the remote pinned to the moving tile as the grid reflows around it after each step.
+  LaunchedEffect(reordering?.packageName, homeApps) {
+    val moving = reordering?.packageName ?: return@LaunchedEffect
+    withFrameNanos {} // let the reflow settle before touching focus
+    runCatching { tileFocus[moving]?.requestFocus() }
+  }
+
+  Box(
+    modifier = modifier
+      .fillMaxSize()
+      .onPreviewKeyEvent { event ->
+        if (state.reordering == null || event.type != KeyEventType.KeyDown) {
+          return@onPreviewKeyEvent false
+        }
+        when (event.key) {
+          Key.DirectionLeft -> onAction(LauncherAction.ReorderStep(MoveDirection.Left)).let { true }
+          Key.DirectionRight -> onAction(LauncherAction.ReorderStep(MoveDirection.Right)).let { true }
+          Key.DirectionUp -> onAction(LauncherAction.ReorderStep(MoveDirection.Up)).let { true }
+          Key.DirectionDown -> onAction(LauncherAction.ReorderStep(MoveDirection.Down)).let { true }
+          Key.DirectionCenter, Key.Enter, Key.NumPadEnter -> {
+            if (event.nativeKeyEvent.repeatCount == 0) onAction(LauncherAction.CommitMove)
+            true // consume repeats too, so a held OK can't leak a click into the grid
+          }
+          else -> false
+        }
+      },
+  ) {
     val onOpenSettings = { onAction(LauncherAction.OpenSettings) }
     Box(modifier = Modifier.fillMaxSize().graphicsLayer { alpha = contentAlpha }) {
       when (val apps = state.apps) {
@@ -176,6 +221,7 @@ fun LauncherScreen(
                 gearFocusRequester = gearFocus,
                 tileBounds = tileBounds,
                 tileFocus = tileFocus,
+                reordering = state.reordering,
               )
             // Apps exist but every one is hidden — point at settings instead of "no apps".
             apps.allApps.isNotEmpty() ->
@@ -209,6 +255,13 @@ fun LauncherScreen(
       Overlay.Settings ->
         AllAppsSettings(allApps = allApps, onAction = onAction)
       Overlay.None -> Unit
+    }
+
+    if (reordering != null) {
+      MoveHintPill(
+        appLabel = reordering.label,
+        modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 19.dp),
+      )
     }
 
     MenuFocusRestorer(overlay = state.overlay, homeApps = homeApps, tileFocus = tileFocus)
@@ -414,6 +467,7 @@ private fun AppGrid(
   gearFocusRequester: FocusRequester,
   tileBounds: MutableMap<String, Rect>,
   tileFocus: MutableMap<String, FocusRequester>,
+  reordering: AppInfo?,
 ) {
   val firstItemFocus = remember { FocusRequester() }
   // Move focus onto the first app so the remote can drive the grid immediately.
@@ -450,10 +504,14 @@ private fun AppGrid(
           tileBounds.remove(app.packageName)
         }
       }
+      val isMoving = reordering?.packageName == app.packageName
+      val reorderActive = reordering != null
       AppCard(
         app = app,
-        onClick = { onAppClick(app) },
-        onLongClick = { onAppLongPress(app) },
+        // While reordering, the D-pad is captured for moves — tiles are inert to click/long-press.
+        onClick = { if (!reorderActive) onAppClick(app) },
+        onLongClick = { if (!reorderActive) onAppLongPress(app) },
+        isMoving = isMoving,
         modifier = Modifier
           .animateItem()
           .focusRequester(focusRequester)
@@ -470,18 +528,24 @@ private fun AppCard(
   onClick: () -> Unit,
   onLongClick: () -> Unit,
   modifier: Modifier = Modifier,
+  isMoving: Boolean = false,
 ) {
+  // The held tile in Move mode lifts higher than an ordinary focus: bigger scale, thicker ring,
+  // deeper glow — so "held for dragging" reads distinctly from plain focus.
   Card(
     onClick = onClick,
     onLongClick = onLongClick,
     shape = CardDefaults.shape(shape = RoundedCornerShape(8.dp)),
-    scale = CardDefaults.scale(focusedScale = 1.07f),
+    scale = CardDefaults.scale(focusedScale = if (isMoving) 1.1f else 1.07f),
     border = CardDefaults.border(
-      border = Border(BorderStroke(1.dp, NocturneColors.CardBorder)),
-      focusedBorder = Border(BorderStroke(3.dp, NocturneColors.Amber)),
+      border = Border(BorderStroke(if (isMoving) 3.dp else 1.dp, NocturneColors.CardBorder)),
+      focusedBorder = Border(BorderStroke(if (isMoving) 5.dp else 3.dp, NocturneColors.Amber)),
     ),
     glow = CardDefaults.glow(
-      focusedGlow = Glow(elevationColor = NocturneColors.Amber, elevation = 24.dp),
+      focusedGlow = Glow(
+        elevationColor = NocturneColors.Amber,
+        elevation = if (isMoving) 40.dp else 24.dp,
+      ),
     ),
     colors = CardDefaults.colors(
       containerColor = NocturneColors.CardFill,
@@ -491,6 +555,32 @@ private fun AppCard(
     modifier = modifier.fillMaxWidth().aspectRatio(16f / 9f),
   ) {
     AppTileArt(app)
+  }
+}
+
+/** Bottom-center hint while a tile is held in Move mode. */
+@Composable
+private fun MoveHintPill(appLabel: String, modifier: Modifier = Modifier) {
+  var entered by remember { mutableStateOf(false) }
+  LaunchedEffect(Unit) { entered = true }
+  val alpha by animateFloatAsState(if (entered) 1f else 0f, tween(160), label = "hintAlpha")
+  val rise by animateFloatAsState(if (entered) 0f else 1f, tween(160), label = "hintRise")
+
+  Row(
+    verticalAlignment = Alignment.CenterVertically,
+    modifier = modifier
+      .graphicsLayer {
+        this.alpha = alpha
+        translationY = rise * 8.dp.toPx()
+      }
+      .clip(RoundedCornerShape(percent = 50))
+      .background(NocturneColors.HintPillFill)
+      .border(1.dp, NocturneColors.GearBorder, RoundedCornerShape(percent = 50))
+      .padding(horizontal = 13.dp, vertical = 5.dp),
+  ) {
+    Text(text = "Moving ", style = HintPillStyle)
+    Text(text = appLabel, style = HintPillStyle.copy(fontWeight = FontWeight.SemiBold, color = NocturneColors.TextPrimary))
+    Text(text = " · arrows to reorder · OK to drop", style = HintPillStyle)
   }
 }
 
