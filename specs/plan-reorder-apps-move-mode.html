@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plan: Nocturne — Long-Press Menu Card, Move Mode &amp; Content Fade-In</title>
+<style>
+  :root {
+    /* Nocturne visual identity — synced with specs/plan-favorites-longpress-settings.html */
+    --bg: #0a0b0e;
+    --bg-raised: #12141a;
+    --bg-inset: #08090c;
+    --border: #23262e;
+    --border-soft: #1a1d24;
+    --text: #e8eaef;
+    --text-secondary: #cdd2da;
+    --text-muted: #7c7f88;
+    --accent: #efa831;          /* oklch(0.78 0.15 75) — amber focus ring */
+    --accent-soft: rgba(239, 168, 49, 0.12);
+    --accent-glow: #f9b73f;     /* oklch(0.82 0.15 78) — sun dot */
+    --ok: #7fb97a;
+    --danger: #c96a5c;
+    --serif: 'Newsreader', Georgia, 'Times New Roman', serif;
+    --mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--serif);
+    font-size: 17px;
+    line-height: 1.65;
+  }
+  main { max-width: 960px; margin: 0 auto; padding: 56px 32px 140px; }
+  h1 { font-size: 40px; font-weight: 600; line-height: 1.15; margin: 0 0 12px; letter-spacing: 0.2px; }
+  h2 {
+    font-size: 27px; font-weight: 600; margin: 64px 0 16px;
+    padding-bottom: 10px; border-bottom: 1px solid var(--border);
+  }
+  h3 { font-size: 21px; font-weight: 600; margin: 36px 0 10px; }
+  h4 { font-size: 17.5px; font-weight: 600; margin: 28px 0 8px; color: var(--text-secondary); }
+  p { margin: 0 0 14px; }
+  a { color: var(--accent); }
+  em { color: var(--text-secondary); }
+  strong { color: var(--text); }
+  code {
+    font-family: var(--mono); font-size: 0.82em;
+    background: var(--bg-raised); border: 1px solid var(--border-soft);
+    border-radius: 5px; padding: 1.5px 6px; color: var(--text-secondary);
+  }
+  pre {
+    background: var(--bg-inset); border: 1px solid var(--border-soft); border-radius: 10px;
+    padding: 16px 18px; overflow-x: auto; line-height: 1.5; margin: 14px 0 20px;
+  }
+  pre code { background: none; border: none; padding: 0; font-size: 13px; color: var(--text-secondary); }
+  ul { padding-left: 26px; margin: 0 0 16px; }
+  li { margin: 5px 0; }
+  table { border-collapse: collapse; width: 100%; margin: 14px 0 22px; font-size: 15px; }
+  th, td { border: 1px solid var(--border-soft); padding: 8px 12px; text-align: left; vertical-align: top; }
+  th { background: var(--bg-raised); font-weight: 600; color: var(--text-secondary); }
+  td code { font-size: 12.5px; }
+  header .meta { margin: 18px 0 4px; }
+  details {
+    background: var(--bg-raised); border: 1px solid var(--border-soft);
+    border-radius: 10px; padding: 12px 18px; margin: 12px 0;
+  }
+  details summary { cursor: pointer; font-weight: 600; color: var(--text-secondary); }
+  details[open] summary { margin-bottom: 10px; }
+  dl { display: grid; grid-template-columns: 130px 1fr; gap: 6px 18px; margin: 8px 0; font-size: 14.5px; }
+  dt { color: var(--text-muted); font-style: italic; }
+  dd { margin: 0; font-family: var(--mono); font-size: 12.5px; word-break: break-all; align-self: center; }
+  .subtitle { font-style: italic; color: var(--text-muted); font-size: 18px; margin-bottom: 6px; }
+  .tag {
+    display: inline-block; font-family: var(--mono); font-size: 11px; font-weight: 600;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    border-radius: 5px; padding: 2px 8px; margin-right: 6px; vertical-align: 1px;
+  }
+  .tag.existing { background: rgba(127, 185, 122, 0.12); color: var(--ok); border: 1px solid rgba(127,185,122,0.3); }
+  .tag.new { background: var(--accent-soft); color: var(--accent); border: 1px solid rgba(239,168,49,0.35); }
+  .files li { margin: 8px 0; }
+  .phase {
+    background: var(--bg-raised); border: 1px solid var(--border);
+    border-radius: 16px; padding: 26px 30px 22px; margin: 26px 0;
+  }
+  .phase > h3 { margin-top: 0; }
+  .status {
+    background: var(--bg-inset); color: var(--accent); border: 1px solid var(--border);
+    min-width: 34px; display: inline-block; text-align: center;
+  }
+  .checklist { list-style: none; padding-left: 6px; }
+  .checklist li { margin: 9px 0; padding-left: 2px; }
+  .loop {
+    background: var(--accent-soft); border: 1px solid rgba(239,168,49,0.35);
+    border-radius: 10px; padding: 14px 18px; margin: 20px 0 4px;
+    font-size: 15.5px; color: var(--text-secondary);
+  }
+  .qa-answer { color: var(--text-secondary); font-size: 15.5px; margin: 4px 0 2px; }
+  .callout {
+    border-left: 3px solid var(--accent); background: var(--bg-raised);
+    border-radius: 0 10px 10px 0; padding: 12px 18px; margin: 16px 0; font-size: 15.5px;
+  }
+  .branch-chip {
+    display: inline-block; font-family: var(--mono); font-size: 12px; font-weight: 600;
+    background: var(--bg-inset); color: var(--accent-glow); border: 1px solid var(--border);
+    border-radius: 6px; padding: 2px 9px; margin-left: 8px; vertical-align: 2px;
+  }
+</style>
+</head>
+<body>
+<main>
+
+  <!-- ===== HEADER + UPDATABLE METADATA ===== -->
+  <header>
+    <h1>Plan: Nocturne — Long-Press Menu Card, Move Mode &amp; Content Fade-In</h1>
+    <p class="subtitle">Anchored menu card (Move · Hide · Open app settings · Uninstall · Cancel) · D-pad reorder "Move mode" with persisted order &amp; reflow animation · unified content fade-in that kills the settings-icon focus flash · shipped as a 3-branch Graphite stack</p>
+    <details class="meta">
+      <summary>Metadata</summary>
+      <dl>
+        <dt>created</dt>      <dd>2026-07-05T21:06:56-0500</dd>
+        <dt>modified</dt>     <dd>2026-07-05T21:06:56-0500</dd>
+        <dt>commits</dt>      <dd>4b4387f (base HEAD)</dd>
+        <dt>branches</dt>     <dd>reorder-apps</dd>
+        <dt>agent name</dt>        <dd>Claude Opus 4.8 (claude-opus-4-8)</dd>
+        <dt>session id</dt>      <dd>1f5374a3</dd>
+        <dt>back refs</dt>    <dd>claude.ai/design project 50077339-6d83-4127-8716-f956abd14bd2 (design_handoff_tv_launcher_favorites/README.md — option 3a is the spec; screenshots 01-home-focused … 07-settings-panel), specs/plan-favorites-longpress-settings.html (built the favorites/long-press/settings layer this plan extends), specs/plan-nocturne-tv-launcher.html (built the launcher itself)</dd>
+        <dt>forward refs</dt> <dd></dd>
+      </dl>
+    </details>
+  </header>
+
+  <!-- ===== PURPOSE / PROBLEM / SOLUTION ===== -->
+  <section id="purpose">
+    <h2>Purpose</h2>
+    <p>Bring the Nocturne home screen up to the finalized <strong>option 3a</strong> handoff: replace the small circular long-press <em>action row</em> with an anchored <strong>menu card</strong> (Move · Hide from favorites · Open app settings · Uninstall · Cancel), add a D-pad-driven <strong>Move mode</strong> that reorders the favorites grid with animated reflow and persists the order to the launcher DB, and fix the cold-start glitch where remote focus briefly flashes onto the settings gear before the app grid appears by fading in <em>all</em> home content together once apps have loaded.</p>
+  </section>
+
+  <section id="problem">
+    <h2>Problem</h2>
+    <ul>
+      <li><strong>No reorder.</strong> The home grid is sorted alphabetically (<code>AppsRepository.loadApps()</code>) with no way to arrange favorites; nothing persists a custom order. Users want to drag a tile around the grid.</li>
+      <li><strong>The long-press menu is the old shape.</strong> <code>ui/AppActionMenu.kt</code> renders a three-item circular row (Hide · Uninstall · Cancel). The finalized design is a text-list menu card anchored to the right of the tile with five items — adding <strong>Move</strong> and <strong>Open app settings</strong>.</li>
+      <li><strong>Focus flash on cold start.</strong> During <code>AppsUiState.Loading</code>, <code>MessageScreen("Loading apps…")</code> renders the header with a focusable <code>GearButton</code>. TV focus lands on the gear (the only focusable target), then jumps to the first card once <code>AppsUiState.Ready</code> arrives and <code>AppGrid</code> fires <code>firstItemFocus.requestFocus()</code> — a visible flash to the settings icon before apps appear.</li>
+    </ul>
+  </section>
+
+  <section id="solution">
+    <h2>Solution</h2>
+    <p>Three cohesive slices, shipped as a <strong>Graphite stack</strong> (each branch builds green and is independently reviewable). The MVI-lite shape is preserved throughout: new intent enters as <code>LauncherAction</code>s, one render input stays <code>LauncherState</code>, one-shot effects stay <code>LauncherEvent</code>.</p>
+    <ol>
+      <li><span class="branch-chip">reorder/1-content-fade-in</span> <strong>Content fade-in &amp; focus fix.</strong> Stop rendering a focusable gear during <code>Loading</code>; reveal the whole Ready surface (gear + clock + weather + grid) with a single alpha fade, and only request grid focus once content is shown. Pure UI, no new state.</li>
+      <li><span class="branch-chip">reorder/2-order-persistence</span> <strong>Order persistence + reorder logic.</strong> New SQLDelight <code>appOrder</code> table + <code>OrderRepository</code>, folded into <code>deriveAppsState()</code> so home &amp; settings render in the stored order. Add a pure, unit-tested reorder algorithm and the <code>MoveApp</code> / <code>ReorderStep</code> / <code>CommitMove</code> actions + a <code>reordering</code> field on state. No UI entry point yet — fully JVM-testable.</li>
+      <li><span class="branch-chip">reorder/3-menu-card-move-mode</span> <strong>Menu card + Move mode UI.</strong> Rewrite <code>AppActionMenu</code> as the anchored five-item card; wire "Open app settings" to a platform intent and "Move" into Move mode; render the locked-tile treatment, bottom hint pill, and D-pad reorder handling with <code>Modifier.animateItem()</code> reflow.</li>
+    </ol>
+    <p>UI is verified per project convention with <strong>Android journeys</strong> (no Compose/Espresso tests); logic is covered by <strong>JVM unit tests</strong> in <code>app/src/test</code>.</p>
+  </section>
+
+  <!-- ===== RELEVANT FILES ===== -->
+  <section id="files" class="files">
+    <h2>Relevant Files</h2>
+
+    <h3>Existing Files</h3>
+    <ul>
+      <li><span class="tag existing">existing</span> <code>app/src/main/java/com/pavlovsfrog/minimaltvlauncher/LauncherContract.kt</code> — add <code>MoveApp</code>/<code>ReorderStep</code>/<code>CommitMove</code>/<code>OpenAppSettings</code> actions, an <code>OpenAppInfo</code> event, a <code>reordering: AppInfo?</code> field on <code>LauncherState</code>, and a <code>MoveDirection</code> enum.</li>
+      <li><span class="tag existing">existing</span> <code>app/src/main/java/com/pavlovsfrog/minimaltvlauncher/LauncherViewModel.kt</code> — inject <code>OrderRepository</code>; fold order into the <code>deriveAppsState()</code> <code>combine</code>; reduce the new reorder/open-settings actions.</li>
+      <li><span class="tag existing">existing</span> <code>app/src/main/java/com/pavlovsfrog/minimaltvlauncher/LauncherScreen.kt</code> — content fade-in gate; render Move mode (locked tile, hint pill, D-pad key handler) and disable normal click/long-press while reordering.</li>
+      <li><span class="tag existing">existing</span> <code>app/src/main/java/com/pavlovsfrog/minimaltvlauncher/ui/AppActionMenu.kt</code> — replace the circular action row with the anchored text menu card (5 items, sans-serif, right/left flip + y-clamp).</li>
+      <li><span class="tag existing">existing</span> <code>app/src/main/java/com/pavlovsfrog/minimaltvlauncher/data/VisibilityRepository.kt</code> — reference/template (interface + SQLDelight impl + Flow pattern) for the new <code>OrderRepository</code>.</li>
+      <li><span class="tag existing">existing</span> <code>app/src/main/sqldelight/com/pavlovsfrog/minimaltvlauncher/db/HiddenApp.sq</code> — sibling schema; the new <code>AppOrder.sq</code> lives beside it in the same DB (<code>LauncherDatabase</code>).</li>
+      <li><span class="tag existing">existing</span> <code>app/src/main/java/com/pavlovsfrog/minimaltvlauncher/di/DatabaseModule.kt</code> — <code>@Binds</code> the new <code>OrderRepository</code>; the shared <code>LauncherDatabase</code> picks up the new <code>.sq</code> automatically (schema version bump handled by SQLDelight codegen).</li>
+      <li><span class="tag existing">existing</span> <code>app/src/main/java/com/pavlovsfrog/minimaltvlauncher/MainActivity.kt</code> — consume the new <code>OpenAppInfo</code> event → fire <code>Settings.ACTION_APPLICATION_DETAILS_SETTINGS</code>.</li>
+      <li><span class="tag existing">existing</span> <code>app/src/main/java/com/pavlovsfrog/minimaltvlauncher/theme/NocturneColors.kt</code> — add menu-card / hint-pill / move-glow tokens (card fill <code>rgba(13,14,19,0.96)</code>, hairlines, danger already present).</li>
+      <li><span class="tag existing">existing</span> <code>app/src/test/java/com/pavlovsfrog/minimaltvlauncher/LauncherViewModelTest.kt</code> — template + home for new reorder/open-settings ViewModel tests (fakes already exist).</li>
+      <li><span class="tag existing">existing</span> <code>app/src/test/java/com/pavlovsfrog/minimaltvlauncher/data/VisibilityRepositoryTest.kt</code> — template for <code>OrderRepositoryTest</code> (in-memory <code>JdbcSqliteDriver</code> pattern).</li>
+      <li><span class="tag existing">existing</span> <code>CLAUDE.md</code>, <code>README.md</code> — conventions: no UI unit tests, journeys for UI, gradle quality gates.</li>
+    </ul>
+
+    <h3>New Files</h3>
+    <ul>
+      <li><span class="tag new">new</span> <code>app/src/main/sqldelight/com/pavlovsfrog/minimaltvlauncher/db/AppOrder.sq</code> — <code>appOrder(packageName TEXT PRIMARY KEY, position INTEGER NOT NULL)</code> with <code>selectAll</code> (ORDER BY position), <code>upsert</code>, <code>deleteAll</code>, <code>prune</code>.</li>
+      <li><span class="tag new">new</span> <code>app/src/main/java/com/pavlovsfrog/minimaltvlauncher/data/OrderRepository.kt</code> — interface + <code>SqlDelightOrderRepository</code>: <code>order(): Flow&lt;List&lt;String&gt;&gt;</code>, <code>setOrder(List&lt;String&gt;)</code> (transactional replace), <code>prune(installed)</code>.</li>
+      <li><span class="tag new">new</span> <code>app/src/main/java/com/pavlovsfrog/minimaltvlauncher/ReorderMath.kt</code> — pure functions: <code>moveWithinVisible(visible, movingPkg, direction, columns)</code> and <code>threadVisibleIntoFull(fullOrder, newVisible)</code>. No Android/Compose deps → trivially unit-testable.</li>
+      <li><span class="tag new">new</span> <code>app/src/test/java/com/pavlovsfrog/minimaltvlauncher/ReorderMathTest.kt</code> — exhaustive edge cases for the reorder algorithm (row edges, no-wrap, hidden-app stability).</li>
+      <li><span class="tag new">new</span> <code>app/src/test/java/com/pavlovsfrog/minimaltvlauncher/data/OrderRepositoryTest.kt</code> — round-trip + prune coverage on the in-memory driver.</li>
+      <li><span class="tag new">new</span> <code>journeys/</code> XMLs (scratch/dev): <code>menu-card.xml</code>, <code>move-mode.xml</code>, <code>content-fade-in.xml</code> — Android-journey scripts driving an emulator to verify the three UI behaviors (not committed test code; see Testing Strategy).</li>
+    </ul>
+  </section>
+
+  <!-- ===== IMPLEMENTATION PHASES ===== -->
+  <section id="phases">
+    <h2>Implementation Phases</h2>
+    <p><strong>IMPORTANT:</strong> Execute every phase and task step by step, in order, top to bottom. Each phase is one branch in a Graphite stack; create the branch at the start of the phase and keep the working tree green before moving on.</p>
+    <p>Status markers: <code>[]</code> idle · <code>[wip]</code> in progress · <code>[x]</code> complete · <code>[f]</code> failed. All start as <code>[]</code>; the Build Plan workflow updates them as it works.</p>
+
+    <div class="callout">
+      <strong>Stacking model.</strong> Base is the current <code>reorder-apps</code> HEAD (<code>4b4387f</code>). Build the stack with Graphite: <code>gt create -m "&lt;msg&gt;"</code> per phase to stack a new branch on the previous one, commit each phase's work onto its branch, then <code>gt submit --stack --no-interactive</code> at the end to open the three stacked PRs. See <a href="#notes">Notes → Graphite stack</a> for the exact command sequence and a single-PR fallback.
+    </div>
+
+    <!-- ===================== PHASE 1 ===================== -->
+    <div class="phase">
+      <h3><code class="status">[]</code> Phase 1: Content fade-in &amp; focus-flash fix <span class="branch-chip">reorder/1-content-fade-in</span></h3>
+      <p>Eliminate the cold-start flash where focus briefly lands on the gear. During <code>Loading</code>, render only the wallpaper (no focusable gear). On the first transition to <code>Ready</code>, fade the entire home surface in together (gear + clock + weather + grid) and only then let the grid claim focus. Pure UI change — no contract or ViewModel edits.</p>
+
+      <h4>1. Branch</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> From <code>reorder-apps</code> HEAD, create the stack branch: <code>gt create reorder/1-content-fade-in</code> (or <code>git switch -c</code> if not using Graphite).</li>
+      </ul>
+
+      <h4>2. Gate the Loading state so no gear is focusable</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> In <code>LauncherScreen.kt</code>, change the <code>AppsUiState.Loading</code> branch so it renders <strong>no</strong> header/gear — return an empty full-size <code>Box</code> (wallpaper shows through <code>NocturneBackground</code>). This removes the only focusable target during load, which is the root cause of the flash.</li>
+        <li><code class="status">[]</code> Remove/relocate the gear-autofocus <code>LaunchedEffect(homeApps.isEmpty(), allApps.isEmpty())</code> so it can only fire in a <code>Ready</code> state with apps installed but all hidden (never during <code>Loading</code>). Guard it on <code>state.apps is AppsUiState.Ready</code>.</li>
+      </ul>
+
+      <h4>3. Reveal the Ready surface with a unified fade</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Add a <code>reveal</code> gate: <code>var revealed by remember { mutableStateOf(false) }; LaunchedEffect(state.apps is AppsUiState.Ready) { if (ready) revealed = true }</code>, then <code>val contentAlpha by animateFloatAsState(if (revealed) 1f else 0f, tween(380), label = "reveal")</code> (mirror the existing <code>animateFloatAsState</code> + <code>graphicsLayer { alpha }</code> idiom already used in <code>AppActionMenu.kt</code>/<code>AllAppsSettings.kt</code>).</li>
+        <li><code class="status">[]</code> Wrap the <code>Ready</code> content (the <code>AppGrid</code> and both <code>MessageScreen</code> variants) in a <code>Box</code> with <code>Modifier.graphicsLayer { alpha = contentAlpha }</code> so gear, clock, weather, and grid fade in <em>together</em> as one surface.</li>
+        <li><code class="status">[]</code> Keep <code>AppGrid</code>'s <code>firstItemFocus.requestFocus()</code>, but ensure it runs only in the Ready branch (it already keys on <code>apps.isNotEmpty()</code>); the empty Loading box means focus has nowhere to flash to beforehand. Confirm clock/weather still animate in via the same alpha.</li>
+      </ul>
+
+      <h4>4. Testing Strategy</h4>
+      <p>This phase is presentation-only, so coverage is a compile+lint gate plus a manual/journey check that the flash is gone. Per <code>CLAUDE.md</code>, no Compose/Espresso tests are added.</p>
+      <ul class="checklist">
+        <li><code class="status">[]</code> <code>./gradlew :app:assembleDebug</code> — the fade/gate change compiles.</li>
+        <li><code class="status">[]</code> <code>./gradlew :app:lintDebug</code> — no new lint errors.</li>
+        <li><code class="status">[]</code> <code>./gradlew :app:testDebugUnitTest</code> — existing unit suite still green (no logic changed).</li>
+        <li><code class="status">[]</code> Journey <code>journeys/content-fade-in.xml</code>: cold-launch the app on the TV emulator, capture frames across the load, assert focus is never on the gear before the first card is focused and that content fades in. If no emulator is available in this environment, mark <code>[f]</code> and record the manual reasoning (see Notes → Journeys).</li>
+      </ul>
+      <div class="loop">
+        🔁 <strong>Do not exit this phase until every box above is checked.</strong>
+        If any command fails, fix the cause and re-run — loop until all pass. Commit onto the branch: <code>gt modify -c -m "feat: unified content fade-in; kill settings-icon focus flash on cold start"</code>.
+      </div>
+    </div>
+
+    <!-- ===================== PHASE 2 ===================== -->
+    <div class="phase">
+      <h3><code class="status">[]</code> Phase 2: App-order persistence + reorder logic <span class="branch-chip">reorder/2-order-persistence</span></h3>
+      <p>Everything needed to reorder except the on-screen entry point — all behind a heavy JVM unit-test net. Persist a full ordering of package names; render home &amp; settings in that order; add the pure reorder algorithm and the ViewModel reducers and state for Move mode. Visually a no-op on first run (stored order is empty → falls back to today's alphabetical order).</p>
+
+      <h4>1. Branch</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Stack a branch on Phase 1: <code>gt create reorder/2-order-persistence</code>.</li>
+      </ul>
+
+      <h4>2. SQLDelight order table</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Add <code>app/src/main/sqldelight/…/db/AppOrder.sq</code>: table <code>appOrder(packageName TEXT NOT NULL PRIMARY KEY, position INTEGER NOT NULL)</code>; queries <code>selectAll</code> = <code>SELECT packageName FROM appOrder ORDER BY position</code>, <code>upsert</code> = <code>INSERT OR REPLACE INTO appOrder(packageName, position) VALUES (?, ?)</code>, <code>deleteAll</code> = <code>DELETE FROM appOrder</code>, <code>prune</code> = <code>DELETE FROM appOrder WHERE packageName NOT IN ?</code>. (Same DB as <code>HiddenApp.sq</code> → <code>LauncherDatabase.appOrderQueries</code>. Adding a table bumps the generated schema version automatically; the app DB is created fresh via <code>Schema.create</code>, so no hand-written migration is required for a brand-new table.)</li>
+      </ul>
+
+      <h4>3. OrderRepository (mirror VisibilityRepository)</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Add <code>data/OrderRepository.kt</code>: interface <code>OrderRepository { fun order(): Flow&lt;List&lt;String&gt;&gt;; suspend fun setOrder(packageNames: List&lt;String&gt;); suspend fun prune(installed: Collection&lt;String&gt;) }</code> and <code>SqlDelightOrderRepository @Inject constructor(database)</code>. <code>order()</code> = <code>selectAll().asFlow().mapToList(Dispatchers.IO).distinctUntilChanged()</code>. <code>setOrder</code> runs in <code>withContext(Dispatchers.IO)</code> inside <code>queries.transaction { deleteAll(); forEachIndexed { i, pkg -> upsert(pkg, i.toLong()) } }</code>.</li>
+        <li><code class="status">[]</code> In <code>di/DatabaseModule.kt</code>, add <code>@Binds @Singleton abstract fun bindOrderRepository(impl: SqlDelightOrderRepository): OrderRepository</code>.</li>
+      </ul>
+
+      <h4>4. Reorder algorithm (pure)</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Add <code>ReorderMath.kt</code> with <code>enum class MoveDirection { Left, Right, Up, Down }</code> and: <code>fun moveWithinVisible(visible: List&lt;String&gt;, moving: String, dir: MoveDirection, columns: Int): List&lt;String&gt;</code> — compute source index <code>i</code>; target = <code>i-1</code>/<code>i+1</code>/<code>i-columns</code>/<code>i+columns</code>; block at row edges &amp; list bounds (Left blocked when <code>i % columns == 0</code>, Right when <code>i % columns == columns-1</code> or <code>i == lastIndex</code>, Up when <code>i &lt; columns</code>, Down when <code>i + columns &gt; lastIndex</code>); on a blocked/no-op move return the list unchanged; otherwise remove at <code>i</code> and insert at the clamped target. <strong>No wrapping.</strong></li>
+        <li><code class="status">[]</code> Add <code>fun threadVisibleIntoFull(fullOrder: List&lt;String&gt;, newVisible: List&lt;String&gt;): List&lt;String&gt;</code> — walk <code>fullOrder</code>; where a package is in the visible set, emit the next item from <code>newVisible</code> (preserving hidden apps' absolute positions), else keep it. This is the "hidden apps keep a stable position; moving reorders only the visible sequence" rule from the handoff.</li>
+      </ul>
+
+      <h4>5. Contract + ViewModel wiring</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> <code>LauncherContract.kt</code>: add <code>val reordering: AppInfo? = null</code> to <code>LauncherState</code> (null = not in Move mode); add actions <code>MoveApp(app)</code>, <code>ReorderStep(direction: MoveDirection)</code>, <code>CommitMove</code>, and <code>OpenAppSettings(app)</code>; add event <code>OpenAppInfo(packageName)</code>. Re-export <code>MoveDirection</code> from <code>ReorderMath.kt</code> (no duplicate enum).</li>
+        <li><code class="status">[]</code> <code>LauncherViewModel.kt</code>: inject <code>OrderRepository</code>. Extend <code>deriveAppsState()</code>'s <code>combine</code> to 3 flows — <code>installedApps.filterNotNull()</code>, <code>hiddenPackages()</code>, <code>order()</code> — and sort installed apps by their index in the stored order (unknown → <code>Int.MAX_VALUE</code>; <code>sortedBy</code> is stable so unknowns keep the incoming alphabetical order). Map to <code>AppEntry</code> exactly as today. <code>apps</code> = favorites filtered from the sorted list; <code>allApps</code> = the full sorted list.</li>
+        <li><code class="status">[]</code> Reduce new actions: <code>MoveApp</code> → <code>copy(overlay = Overlay.None, reordering = action.app)</code>. <code>CommitMove</code> → <code>copy(reordering = null)</code> (order already persisted per step). <code>ReorderStep</code> → guard on <code>reordering != null</code>; compute <code>newVisible = moveWithinVisible(currentFavorites, movingPkg, dir, COLUMNS)</code>; if unchanged, no-op; else <code>newFull = threadVisibleIntoFull(currentFullOrder, newVisible)</code> and <code>viewModelScope.launch { orderRepository.setOrder(newFull) }</code>. <code>OpenAppSettings</code> → <code>copy(overlay = Overlay.None)</code> + <code>_events.tryEmit(OpenAppInfo(app.packageName))</code>.</li>
+        <li><code class="status">[]</code> In <code>reloadApps()</code>, also call <code>orderRepository.prune(apps.map(AppInfo::packageName))</code> alongside the existing visibility prune, so uninstalled packages drop out of the stored order.</li>
+        <li><code class="status">[]</code> Define <code>COLUMNS</code> in one shared place (it currently lives in <code>LauncherScreen.kt</code>). Move it to the contract or a small constants file so the ViewModel and the grid agree; the grid keeps using it for <code>GridCells.Fixed</code>.</li>
+        <li><code class="status">[]</code> <code>MainActivity.kt</code>: handle <code>OpenAppInfo</code> → <code>startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, "package:$pkg".toUri()))</code> (wrap in try/catch like <code>launchApp</code>; <code>ScreenResumed</code> already reconciles on return).</li>
+      </ul>
+
+      <h4>6. Testing Strategy</h4>
+      <p>This is the phase to over-test: the reorder math and persistence are pure logic and the ViewModel already has a fake-based harness. Extend <code>LauncherViewModelTest</code> and add two new test classes.</p>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Add <code>ReorderMathTest.kt</code>: Left/Right/Up/Down happy paths on a known 4-col grid; blocked at first/last column, top/bottom rows, and single-item lists (returns unchanged); <code>threadVisibleIntoFull</code> keeps hidden apps pinned while reordering visible ones.</li>
+        <li><code class="status">[]</code> Add <code>OrderRepositoryTest.kt</code> (in-memory <code>JdbcSqliteDriver</code>, mirroring <code>VisibilityRepositoryTest</code>): <code>setOrder</code> round-trips in order; re-<code>setOrder</code> replaces cleanly; <code>prune</code> drops uninstalled packages; an active collector sees each write.</li>
+        <li><code class="status">[]</code> Extend <code>LauncherViewModelTest.kt</code> (add a <code>FakeOrderRepository</code> to <code>buildViewModel</code>): home renders in stored order; unknown apps fall back to alphabetical; <code>MoveApp</code> sets <code>reordering</code> and clears the overlay; <code>ReorderStep</code> persists a new order and updates the grid; a blocked <code>ReorderStep</code> writes nothing; <code>CommitMove</code> clears <code>reordering</code>; <code>OpenAppSettings</code> emits <code>OpenAppInfo</code> and closes the menu.</li>
+        <li><code class="status">[]</code> <code>./gradlew :app:testDebugUnitTest</code> — all new + existing unit tests pass.</li>
+        <li><code class="status">[]</code> <code>./gradlew :app:assembleDebug</code> and <code>./gradlew :app:lintDebug</code> — compiles &amp; lints clean (SQLDelight codegen for the new table runs during assemble).</li>
+      </ul>
+      <div class="loop">
+        🔁 <strong>Do not exit this phase until every box above is checked.</strong>
+        If any command fails, fix the cause and re-run — loop until all pass. Commit: <code>gt modify -c -m "feat: persist favorites grid order in SQLDelight + reorder logic (no UI entry yet)"</code>.
+      </div>
+    </div>
+
+    <!-- ===================== PHASE 3 ===================== -->
+    <div class="phase">
+      <h3><code class="status">[]</code> Phase 3: Long-press menu card + Move mode UI <span class="branch-chip">reorder/3-menu-card-move-mode</span></h3>
+      <p>The user-facing layer: swap the circular action row for the anchored menu card, wire Move into the Phase-2 reorder engine, and render Move mode (locked tile, hint pill, D-pad reflow with <code>animateItem()</code>). Fidelity targets the handoff's option-3a tokens.</p>
+
+      <h4>1. Branch</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Stack a branch on Phase 2: <code>gt create reorder/3-menu-card-move-mode</code>.</li>
+      </ul>
+
+      <h4>2. Menu-card tokens</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> In <code>NocturneColors.kt</code> add: <code>MenuCardFill</code> = <code>Color(0xFF0D0E13).copy(alpha=0.96f)</code>, <code>MenuCardBorder</code> = <code>Color.White.copy(alpha=0.12f)</code>, <code>MenuItemFocusFill</code> = <code>Color.White.copy(alpha=0.10f)</code>, <code>MenuHeader</code> = <code>Color(0xFF8A8E99)</code>, <code>MenuLabel</code> = <code>Color(0xFFF0F1F4)</code>, hint-pill fill <code>Color(0xFF0D0E13).copy(alpha=0.92f)</code>. Reuse existing <code>MenuScrim</code>, <code>DangerText</code>, <code>Amber</code>.</li>
+      </ul>
+
+      <h4>3. Rewrite AppActionMenu as the anchored card</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Replace <code>ActionRow</code>/<code>MenuItem</code> with a vertical <strong>menu card</strong>: width ~170dp (design 340px ÷ 2), <code>MenuCardFill</code> bg, 1dp <code>MenuCardBorder</code>, 7dp radius, 5dp padding; a header row = app name uppercased, <code>FontFamily.SansSerif</code>, letter-spacing, <code>MenuHeader</code>; then five full-width item rows (11px sp label, sans-serif, <code>MenuLabel</code>; focused row = <code>MenuItemFocusFill</code> + 1dp inset amber ring). Items in order: <strong>Move</strong> → <code>MoveApp</code>, <strong>Hide from favorites</strong> → <code>HideApp</code>, <strong>Open app settings</strong> → <code>OpenAppSettings</code>, <strong>Uninstall</strong> (danger color) → <code>UninstallApp</code>, <strong>Cancel</strong> → <code>MenuDismissed</code>. Focus opens on <strong>Move</strong>; no wrap at top/bottom.</li>
+        <li><code class="status">[]</code> Keep the existing scaffolding: full-screen <code>MenuScrim</code> (tap dismisses), the lifted <code>GhostTile</code>, the held-OK guard (<code>sawFreshDown</code>/<code>onPreviewKeyEvent</code>), <code>BackHandler</code> → <code>MenuDismissed</code>, and the fade+rise entry (<code>tween(160)</code>).</li>
+        <li><code class="status">[]</code> Rework the custom <code>Layout</code> anchoring: place the card at <code>x = anchor.right + 8dp</code>; if <code>x + cardWidth</code> overflows the right screen edge, flip to <code>x = anchor.left - cardWidth - 8dp</code>; <code>y = anchor.top</code>, clamped to <code>[margin, screenHeight - cardHeight - margin]</code> so a 5-item card never clips the bottom (design §2 position rules).</li>
+      </ul>
+
+      <h4>4. Move mode rendering &amp; input</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> In <code>LauncherScreen.kt</code>, when <code>state.reordering != null</code>: (a) do <strong>not</strong> dim the grid (no scrim) — Move mode happens on the live home surface; (b) attach an <code>onPreviewKeyEvent</code> handler (on the grid <code>Box</code>) that maps D-pad Left/Right/Up/Down → <code>ReorderStep(direction)</code> and OK/Back → <code>CommitMove</code>, consuming those keys so normal focus traversal is suppressed; (c) suppress <code>AppCard</code> <code>onClick</code>/<code>onLongClick</code> while reordering.</li>
+        <li><code class="status">[]</code> Locked-tile treatment for the moving package: stronger amber ring + extra outer glow (design: <code>scale 1.1</code>, ring + 12px outer amber-30% + deep drop shadow). Implement via the moving card's <code>border</code>/<code>Glow</code>/<code>scale</code> keyed on <code>app.packageName == reordering?.packageName</code>. Keep D-pad focus pinned to the moving tile after each step (reuse the <code>tileFocus</code> map + <code>withFrameNanos {}</code> + <code>requestFocus()</code> pattern from <code>MenuFocusRestorer</code>).</li>
+        <li><code class="status">[]</code> Reflow animation: the grid already applies <code>Modifier.animateItem()</code> per tile (<code>LauncherScreen.kt</code> ~line 444); confirm the item <code>key</code> is stable (<code>componentName.flattenToString()</code>) so that when Phase-2's order change re-sorts the list, tiles animate to their new slots (0.22s-ish ease). Tune the <code>animateItem</code> spec if the default feels off.</li>
+        <li><code class="status">[]</code> Hint pill, bottom-center: rounded pill (<code>hint-pill fill</code>, 1dp hairline, ~999 radius), sans-serif ~9.5sp, copy "Moving <strong>{App}</strong> · arrows to reorder · OK to drop" with the app name emphasized. Fade+rise in (<code>tween(160)</code>). Positioned ~19dp from the bottom edge.</li>
+      </ul>
+
+      <h4>5. Testing Strategy</h4>
+      <p>UI-heavy phase → verified with Android journeys per <code>CLAUDE.md</code> (no Compose/Espresso tests). The underlying reducers are already unit-tested in Phase 2; re-run that suite to guard against regressions from the contract touch-ups.</p>
+      <ul class="checklist">
+        <li><code class="status">[]</code> <code>./gradlew :app:testDebugUnitTest</code> — Phase-2 reorder/menu reducers still green.</li>
+        <li><code class="status">[]</code> <code>./gradlew :app:assembleDebug</code> — the new menu card + Move mode compile.</li>
+        <li><code class="status">[]</code> <code>./gradlew :app:lintDebug</code> — clean.</li>
+        <li><code class="status">[]</code> Journey <code>journeys/menu-card.xml</code>: long-press a tile → assert the anchored card shows Move / Hide from favorites / Open app settings / Uninstall / Cancel with Move focused; Back dismisses to the same tile.</li>
+        <li><code class="status">[]</code> Journey <code>journeys/move-mode.xml</code>: from the card choose Move → assert the hint pill appears and the tile is locked; D-pad Right then Down → capture frames showing the tile reflow to a new slot; OK drops it; relaunch the app → assert the new order persisted.</li>
+        <li><code class="status">[]</code> If no TV emulator is reachable in this environment, mark the journey boxes <code>[f]</code>, attach the authored journey XML to the branch, and record that UI verification is deferred to a device run (see Notes → Journeys).</li>
+      </ul>
+      <div class="loop">
+        🔁 <strong>Do not exit this phase until every box above is checked.</strong>
+        If any command fails, fix the cause and re-run — loop until all pass. Commit: <code>gt modify -c -m "feat: anchored long-press menu card + D-pad Move mode with animated reflow"</code>.
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== GLOBAL VALIDATION ===== -->
+  <section id="validation">
+    <h2>Validation Commands</h2>
+    <p>Run from the repo root after all three phases; the stack as a whole must be green.</p>
+    <ul class="checklist">
+      <li><code class="status">[]</code> <code>./gradlew :app:testDebugUnitTest</code> — the full JVM suite (existing + ReorderMath + OrderRepository + new ViewModel cases) passes.</li>
+      <li><code class="status">[]</code> <code>./gradlew :app:assembleDebug</code> — the app (all three phases) builds, including SQLDelight codegen for <code>appOrder</code>.</li>
+      <li><code class="status">[]</code> <code>./gradlew :app:lintDebug</code> — no new lint errors across the stack.</li>
+      <li><code class="status">[]</code> Android journeys (<code>content-fade-in</code>, <code>menu-card</code>, <code>move-mode</code>) evaluated on a TV emulator via the android-cli skill — or marked <code>[f]</code> with rationale if no emulator is available in this run.</li>
+      <li><code class="status">[]</code> <code>gt submit --stack --no-interactive</code> (or <code>gt ss</code>) opens the three stacked PRs against <code>main</code>; capture the PR URLs into the plan's <code>forward refs</code>. Fallback: a single squashed branch + one PR (see Notes).</li>
+    </ul>
+    <div class="loop">
+      🔁 <strong>The plan is not complete until every box is checked and every command passes. If for some reason a step is not possible to complete, mark it with [f] and move on if possible.</strong>
+    </div>
+  </section>
+
+  <!-- ===== QUESTIONABLES ===== -->
+  <section id="questionables">
+    <h2>Questionables</h2>
+    <details>
+      <summary>Stack granularity: 3 branches vs. 1 PR</summary>
+      <p class="qa-answer">The repo already ships features as Graphite stacks and the user said "stack that diff if we need." Chosen: a 3-branch stack (fade-in → persistence/logic → menu-card/UI) because each slice builds green and reviews cleanly on its own, and Phase 2 (pure logic + DB) carries almost all the test weight independent of the UI. If Graphite submission fails in this environment, the fallback is one branch (<code>reorder-apps-move-mode</code>) with three commits and a single PR — no code changes needed, just a different submit.</p>
+    </details>
+    <details>
+      <summary>Order model: full package ordering vs. visible-only</summary>
+      <p class="qa-answer">Persisting a <em>full</em> ordering of all installed packages (with hidden apps threaded through in place) directly satisfies the handoff rule "hidden apps keep a stable position; moving reorders only the visible sequence." A visible-only list would lose hidden apps' slots when they're re-favorited. Cost: one extra flow in the <code>combine</code> and the <code>threadVisibleIntoFull</code> step — both cheap and unit-tested.</p>
+    </details>
+    <details>
+      <summary>"Open app settings": real intent vs. prototype stub</summary>
+      <p class="qa-answer">The handoff says the prototype stubs this but production should fire <code>Settings.ACTION_APPLICATION_DETAILS_SETTINGS</code>. We implement the real intent — it's a few lines in <code>MainActivity</code>, matches the existing uninstall-intent pattern, and <code>ScreenResumed</code> already reconciles state on return. Low risk, correct behavior.</p>
+    </details>
+    <details>
+      <summary>Up/Down = ±COLUMNS, and no-wrap edges</summary>
+      <p class="qa-answer">Design specifies Left/Right = ±1 and Up/Down = ±4 (one row), all blocked at grid edges with no wrapping. We hard-code the delta to the grid's <code>COLUMNS</code> (4) rather than measuring actual laid-out rows; this is exact for a fixed 4-column grid. If the grid ever becomes responsive, the delta must come from the real column count — flagged here.</p>
+    </details>
+    <details>
+      <summary>Move mode as a state field vs. an Overlay</summary>
+      <p class="qa-answer">Move mode is <em>not</em> a dimming overlay — it runs on the live home surface — so it's modeled as <code>LauncherState.reordering: AppInfo?</code> rather than an <code>Overlay</code> variant. This keeps the existing scrim-owning <code>Overlay</code> semantics intact and lets the grid keep normal rendering while a key handler captures the D-pad.</p>
+    </details>
+    <details>
+      <summary>Journey/emulator availability in an automated pipeline</summary>
+      <p class="qa-answer">UI truth for this project is Android journeys on a TV emulator (per <code>CLAUDE.md</code>), which needs a running emulator (started raw+headless under <code>sg kvm</code> per project memory). In a headless build→PR pipeline the emulator may be unavailable; those steps are then marked <code>[f]</code> with the authored journey XML attached, and the gradle gates (assemble/lint/unit) remain the automated must-pass bar.</p>
+    </details>
+  </section>
+
+  <!-- ===== NOTES ===== -->
+  <section id="notes">
+    <h2>Notes</h2>
+
+    <h3>Design → code token mapping (option 3a, 1080p ÷ 2 = dp/sp)</h3>
+    <p>The launcher renders at 1080p xhdpi, so the codebase already uses the "design px ÷ 2" convention (see <code>LauncherScreen.kt</code> header comment). Apply the same halving to the new surfaces:</p>
+    <table>
+      <tr><th>Element</th><th>Design (px @1080p)</th><th>Code (dp/sp)</th></tr>
+      <tr><td>Menu card width</td><td>340</td><td>~170dp</td></tr>
+      <tr><td>Menu card radius / padding</td><td>14 / 10</td><td>7dp / 5dp</td></tr>
+      <tr><td>Menu item label</td><td>22px</td><td>11sp</td></tr>
+      <tr><td>Card anchor offset / edge clamp</td><td>16 / 24</td><td>8dp / 12dp</td></tr>
+      <tr><td>Move locked-tile scale</td><td>1.10</td><td>1.10f</td></tr>
+      <tr><td>Hint pill text / bottom offset</td><td>19px / 38px</td><td>~9.5sp / 19dp</td></tr>
+      <tr><td>Menu/pill entry timing</td><td>0.16s ease</td><td><code>tween(160)</code></td></tr>
+      <tr><td>Reflow / focus timing</td><td>0.22s ease</td><td><code>animateItem()</code> default / <code>tween(220)</code></td></tr>
+      <tr><td>Accent (focus/move ring)</td><td><code>oklch(0.78 0.15 75)</code></td><td><code>NocturneColors.Amber</code> = 0xFFEFA831</td></tr>
+      <tr><td>Danger (Uninstall)</td><td><code>#ff9d97</code></td><td><code>NocturneColors.DangerText</code></td></tr>
+    </table>
+    <p>Menu card is deliberately <strong>sans-serif</strong> (<code>FontFamily.SansSerif</code>) — it breaks from the Newsreader launcher type to read as a utility surface (handoff §2).</p>
+
+    <h3>Reorder algorithm sketch</h3>
+    <pre><code>// visible = current favorites in grid order; full = all installed in stored order
+fun onReorderStep(dir: MoveDirection) {
+  val moving = state.reordering?.packageName ?: return
+  val visible = (state.apps as Ready).apps.map { it.packageName }
+  val newVisible = moveWithinVisible(visible, moving, dir, COLUMNS)
+  if (newVisible == visible) return                 // blocked edge → no write
+  val full = (state.apps as Ready).allApps.map { it.packageName }
+  orderRepository.setOrder(threadVisibleIntoFull(full, newVisible))  // persists each step
+}
+// threadVisibleIntoFull: hidden apps stay pinned; visible slots receive newVisible in sequence
+</code></pre>
+
+    <h3>Graphite stack (build → PR)</h3>
+    <pre><code># base = reorder-apps @ 4b4387f
+gt create reorder/1-content-fade-in    # …implement Phase 1…
+gt modify -c -m "feat: unified content fade-in; kill settings-icon focus flash"
+gt create reorder/2-order-persistence  # …implement Phase 2…
+gt modify -c -m "feat: persist grid order in SQLDelight + reorder logic"
+gt create reorder/3-menu-card-move-mode # …implement Phase 3…
+gt modify -c -m "feat: menu card + D-pad Move mode with animated reflow"
+gt submit --stack --no-interactive     # opens 3 stacked PRs vs main
+# Fallback if gt/submission unavailable: one branch, three commits, single `gh pr create`.
+</code></pre>
+    <p>Note: <code>gt log short</code> currently shows only <code>main</code> in this worktree, so <code>reorder-apps</code> may need <code>gt track</code> before <code>gt create</code>. If Graphite refuses in this worktree, fall back to plain <code>git switch -c</code> per phase and <code>gh pr create --base &lt;prev-branch&gt;</code> to emulate the stack, or collapse to a single PR.</p>
+
+    <h3>Journeys</h3>
+    <p>Per <code>CLAUDE.md</code> + memory: UI is verified by authoring journey XML (android-cli skill's journeys reference) and evaluating it against the app on a TV emulator (start the emulator raw + headless under <code>sg kvm</code>; the <code>android</code> CLI drives layout/screen-capture/adb-input). No <code>app/src/androidTest</code> additions. If the emulator can't be brought up in this pipeline run, author + stash the journeys and defer evaluation, marking those steps <code>[f]</code>.</p>
+
+    <h3>Dependencies</h3>
+    <p>No new libraries. SQLDelight, Hilt, Compose-for-TV, and coroutines-test are already wired (<code>app/build.gradle.kts</code>). The new <code>appOrder</code> table is generated by the existing SQLDelight plugin config; the KSP↔SQLDelight source-root shim already present in <code>build.gradle.kts</code> keeps Hilt able to resolve the regenerated <code>LauncherDatabase</code>.</p>
+
+    <h3>Risks / watch-list</h3>
+    <ul>
+      <li><strong>Focus during reflow.</strong> Re-sorting the backing list while a tile is "held" can bounce D-pad focus; pin focus to the moving package after each step (mirror <code>MenuFocusRestorer</code>'s <code>withFrameNanos {}</code> + <code>requestFocus()</code>).</li>
+      <li><strong>Persist-per-step churn.</strong> Every <code>ReorderStep</code> writes the full order in a transaction; fine at ~20 apps. If it ever feels heavy, debounce the write on <code>CommitMove</code> (but the design wants each step committed).</li>
+      <li><strong>COLUMNS single-source.</strong> The ViewModel and grid must share the column count; moving the constant out of <code>LauncherScreen.kt</code> avoids drift.</li>
+      <li><strong>Schema.</strong> Adding a table to an existing on-device DB relies on <code>Schema.create</code> for fresh installs; if the app is already installed with the old schema, SQLDelight needs a migration file. For this launcher (dev installs) a fresh install is expected, but note it before shipping to real devices.</li>
+    </ul>
+  </section>
+
+  <!-- ===== AMENDMENTS ===== -->
+  <section id="amendments">
+    <h2>Amendments</h2>
+    <p><em>None yet — populated by the Update Plan / Build Plan workflows as the stack is built and PRs land.</em></p>
+  </section>
+
+</main>
+</body>
+</html>
