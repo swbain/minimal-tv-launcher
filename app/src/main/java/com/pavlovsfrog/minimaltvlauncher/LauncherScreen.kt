@@ -3,6 +3,8 @@
 package com.pavlovsfrog.minimaltvlauncher
 
 import android.content.ComponentName
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -40,6 +42,7 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInRoot
@@ -132,57 +135,67 @@ fun LauncherScreen(
   val homeApps = (state.apps as? AppsUiState.Ready)?.apps ?: emptyList()
   val allApps = (state.apps as? AppsUiState.Ready)?.allApps ?: emptyList()
 
-  // With no favorites there is no grid to autofocus — start the remote on the gear.
-  LaunchedEffect(homeApps.isEmpty(), allApps.isEmpty()) {
-    if (homeApps.isEmpty() && allApps.isNotEmpty()) {
+  // With no favorites there is no grid to autofocus — start the remote on the gear. Guarded to
+  // Ready so it can never fire during Loading (when the gear isn't even composed).
+  LaunchedEffect(state.apps is AppsUiState.Ready, homeApps.isEmpty(), allApps.isEmpty()) {
+    if (state.apps is AppsUiState.Ready && homeApps.isEmpty() && allApps.isNotEmpty()) {
       runCatching { gearFocus.requestFocus() }
     }
   }
 
+  // Reveal the whole home surface (gear + clock + weather + grid) with one fade the moment apps
+  // finish loading. Before that we render only the wallpaper — nothing focusable — so remote
+  // focus can't flash onto the settings gear ahead of the first app card appearing.
+  var revealed by remember { mutableStateOf(false) }
+  LaunchedEffect(state.apps is AppsUiState.Ready) {
+    if (state.apps is AppsUiState.Ready) revealed = true
+  }
+  val contentAlpha by animateFloatAsState(
+    targetValue = if (revealed) 1f else 0f,
+    animationSpec = tween(380),
+    label = "contentReveal",
+  )
+
   Box(modifier = modifier.fillMaxSize()) {
     val onOpenSettings = { onAction(LauncherAction.OpenSettings) }
-    when (val apps = state.apps) {
-      AppsUiState.Loading ->
-        MessageScreen(
-          clock = state.clock,
-          weather = state.weather,
-          message = "Loading apps…",
-          onOpenSettings = onOpenSettings,
-          gearFocusRequester = gearFocus,
-        )
-      is AppsUiState.Ready ->
-        when {
-          apps.apps.isNotEmpty() ->
-            AppGrid(
-              clock = state.clock,
-              weather = state.weather,
-              apps = apps.apps,
-              onAppClick = { onAction(LauncherAction.AppClicked(it)) },
-              onAppLongPress = { onAction(LauncherAction.AppLongPressed(it)) },
-              onOpenSettings = onOpenSettings,
-              gearFocusRequester = gearFocus,
-              tileBounds = tileBounds,
-              tileFocus = tileFocus,
-            )
-          // Apps exist but every one is hidden — point at settings instead of "no apps".
-          apps.allApps.isNotEmpty() ->
-            MessageScreen(
-              clock = state.clock,
-              weather = state.weather,
-              message = "No favorites on this screen",
-              subline = "Open Settings (⚙) to star the apps you want here",
-              onOpenSettings = onOpenSettings,
-              gearFocusRequester = gearFocus,
-            )
-          else ->
-            MessageScreen(
-              clock = state.clock,
-              weather = state.weather,
-              message = "No apps installed",
-              onOpenSettings = onOpenSettings,
-              gearFocusRequester = gearFocus,
-            )
-        }
+    Box(modifier = Modifier.fillMaxSize().graphicsLayer { alpha = contentAlpha }) {
+      when (val apps = state.apps) {
+        // Wallpaper only while loading: no header, no focusable gear, nothing to flash focus onto.
+        AppsUiState.Loading -> Unit
+        is AppsUiState.Ready ->
+          when {
+            apps.apps.isNotEmpty() ->
+              AppGrid(
+                clock = state.clock,
+                weather = state.weather,
+                apps = apps.apps,
+                onAppClick = { onAction(LauncherAction.AppClicked(it)) },
+                onAppLongPress = { onAction(LauncherAction.AppLongPressed(it)) },
+                onOpenSettings = onOpenSettings,
+                gearFocusRequester = gearFocus,
+                tileBounds = tileBounds,
+                tileFocus = tileFocus,
+              )
+            // Apps exist but every one is hidden — point at settings instead of "no apps".
+            apps.allApps.isNotEmpty() ->
+              MessageScreen(
+                clock = state.clock,
+                weather = state.weather,
+                message = "No favorites on this screen",
+                subline = "Open Settings (⚙) to star the apps you want here",
+                onOpenSettings = onOpenSettings,
+                gearFocusRequester = gearFocus,
+              )
+            else ->
+              MessageScreen(
+                clock = state.clock,
+                weather = state.weather,
+                message = "No apps installed",
+                onOpenSettings = onOpenSettings,
+                gearFocusRequester = gearFocus,
+              )
+          }
+      }
     }
 
     when (val overlay = state.overlay) {
