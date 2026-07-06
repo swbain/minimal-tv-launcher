@@ -97,11 +97,11 @@
       <summary>Metadata</summary>
       <dl>
         <dt>created</dt>      <dd>2026-07-05</dd>
-        <dt>modified</dt>     <dd>2026-07-05</dd>
-        <dt>commits</dt>      <dd>204ff12</dd>
+        <dt>modified</dt>     <dd>2026-07-05, 2026-07-06</dd>
+        <dt>commits</dt>      <dd>204ff12, a331396</dd>
         <dt>branches</dt>     <dd>github-actions</dd>
         <dt>agent name</dt>   <dd>Claude Fable 5 (claude-fable-5)</dd>
-        <dt>session id</dt>   <dd>34d78313-b158-4402-905a-9c15ee9a9d76</dd>
+        <dt>session id</dt>   <dd>34d78313-b158-4402-905a-9c15ee9a9d76, 0bd7cb59-5594-4951-be74-040b87fd76a6</dd>
         <dt>back refs</dt>    <dd>specs/plan-nocturne-tv-launcher.html, specs/plan-reorder-apps-move-mode.html</dd>
         <dt>forward refs</dt> <dd>—</dd>
       </dl>
@@ -242,7 +242,7 @@ android {
 }</code></pre>
       <ul class="checklist">
         <li><code class="status">[x]</code> Add the conditional <code>signingConfigs</code> block and release wiring shown above</li>
-        <li><code class="status">[]</code> Create local <code>keystore.properties</code> (gitignored) with <code>storeFile=/home/stephen/keystores/nocturne-release.jks</code> (absolute path — <code>rootProject.file()</code> does <em>not</em> expand <code>~</code>) and alias <code>nocturne</code></li>
+        <li><code class="status">[x]</code> Create local <code>keystore.properties</code> (gitignored) with <code>storeFile=/home/stephen/keystores/nocturne-release.jks</code> (absolute path — <code>rootProject.file()</code> does <em>not</em> expand <code>~</code>) and alias <code>nocturne</code></li>
         <li><code class="status">[x]</code> Confirm <code>git status</code> shows neither <code>keystore.properties</code> nor any <code>.jks</code> file</li>
       </ul>
 
@@ -252,7 +252,7 @@ gh secret set RELEASE_KEYSTORE_PASSWORD   # paste when prompted
 gh secret set RELEASE_KEY_ALIAS           # nocturne
 gh secret set RELEASE_KEY_PASSWORD</code></pre>
       <ul class="checklist">
-        <li><code class="status">[]</code> All four secrets set; verify with <code>gh secret list</code></li>
+        <li><code class="status">[x]</code> All four secrets set; verify with <code>gh secret list</code></li>
       </ul>
 
       <h4>5. Testing Strategy</h4>
@@ -260,8 +260,8 @@ gh secret set RELEASE_KEY_PASSWORD</code></pre>
       present, still-buildable (unsigned) when it is absent. Signature verified with
       <code>apksigner</code> from the installed Android SDK build-tools.</p>
       <ul class="checklist">
-        <li><code class="status">[]</code> <code>./gradlew :app:assembleRelease</code> — with <code>keystore.properties</code> present, emits <code>app/build/outputs/apk/release/app-release.apk</code> (not <code>-unsigned</code>)</li>
-        <li><code class="status">[]</code> <code>"$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk</code> — certificate DN/alias matches the generated key</li>
+        <li><code class="status">[x]</code> <code>./gradlew :app:assembleRelease</code> — with <code>keystore.properties</code> present, emits <code>app/build/outputs/apk/release/app-release.apk</code> (not <code>-unsigned</code>)</li>
+        <li><code class="status">[x]</code> <code>"$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk</code> — certificate DN/alias matches the generated key</li>
         <li><code class="status">[x]</code> <code>mv keystore.properties /tmp/ && ./gradlew :app:assembleRelease && mv /tmp/keystore.properties .</code> — build still succeeds without signing material (emits unsigned APK)</li>
         <li><code class="status">[x]</code> <code>./gradlew :app:assembleDebug :app:testDebugUnitTest</code> — debug path untouched by the change</li>
       </ul>
@@ -273,7 +273,7 @@ gh secret set RELEASE_KEY_PASSWORD</code></pre>
 
     <!-- ============ PHASE 2 ============ -->
     <div class="phase">
-      <h3><code class="status">[]</code> Phase 2: PR Checks Workflow</h3>
+      <h3><code class="status">[x]</code> Phase 2: PR Checks Workflow</h3>
       <p>One workflow, one job. The three gates share a single Gradle invocation so
       configuration, daemon, and cache warm-up are paid once. JDK 17 matches the
       project's <code>jvmToolchain(17)</code> (foojay resolver would fetch it anyway,
@@ -315,8 +315,8 @@ jobs:
             app/build/reports/
             app/build/test-results/</code></pre>
       <ul class="checklist">
-        <li><code class="status">[]</code> Create the workflow file exactly as above (adjust action majors only if a run flags a deprecation)</li>
-        <li><code class="status">[]</code> <code>cache-read-only</code> guard: only <code>main</code> pushes write the Gradle cache, PRs read it — prevents cache-thrash from parallel PRs</li>
+        <li><code class="status">[x]</code> Create the workflow file exactly as above (adjust action majors only if a run flags a deprecation)</li>
+        <li><code class="status">[x]</code> <code>cache-read-only</code> guard: only <code>main</code> pushes write the Gradle cache, PRs read it — prevents cache-thrash from parallel PRs</li>
       </ul>
 
       <h4>2. Testing Strategy</h4>
@@ -324,10 +324,10 @@ jobs:
       Graphite (project convention: <code>gt submit</code>, never raw <code>gh pr
       create</code>) and watch the check run on the PR.</p>
       <ul class="checklist">
-        <li><code class="status">[]</code> <code>./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug</code> — the exact CI command passes locally first</li>
-        <li><code class="status">[]</code> <code>gt submit</code> — opens/updates the PR for this branch; the <code>pull_request</code> trigger fires</li>
-        <li><code class="status">[]</code> <code>gh run watch $(gh run list --workflow=ci.yml --limit 1 --json databaseId -q '.[0].databaseId')</code> — CI job completes green</li>
-        <li><code class="status">[]</code> <code>gh pr checks</code> — the <code>checks</code> job is reported on the PR</li>
+        <li><code class="status">[x]</code> <code>./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug</code> — the exact CI command passes locally first</li>
+        <li><code class="status">[x]</code> <code>gt submit</code> — opens/updates the PR for this branch; the <code>pull_request</code> trigger fires</li>
+        <li><code class="status">[x]</code> <code>gh run watch $(gh run list --workflow=ci.yml --limit 1 --json databaseId -q '.[0].databaseId')</code> — CI job completes green</li>
+        <li><code class="status">[x]</code> <code>gh pr checks</code> — the <code>checks</code> job is reported on the PR</li>
       </ul>
       <div class="loop">
         🔁 <strong>Do not exit this phase until every box above is checked.</strong>
@@ -337,7 +337,7 @@ jobs:
 
     <!-- ============ PHASE 3 ============ -->
     <div class="phase">
-      <h3><code class="status">[]</code> Phase 3: Signed Release Workflow</h3>
+      <h3><code class="status">[wip]</code> Phase 3: Signed Release Workflow</h3>
       <p>Runs on <code>v*</code> tags (the release path) and on manual dispatch (the
       dry-run path — same build, artifact only, no GitHub Release). CI reconstructs the
       keystore from secrets into files that Phase 1's Gradle logic already understands,
@@ -410,13 +410,13 @@ jobs:
           files: ${{ env.APK }}
           generate_release_notes: true</code></pre>
       <ul class="checklist">
-        <li><code class="status">[]</code> Create the workflow file as above; confirm the build-tools version present on the runner (<code>ls "$ANDROID_HOME"/build-tools/</code> in a step) and pin <code>apksigner</code>'s path accordingly, or glob the newest</li>
-        <li><code class="status">[]</code> Keystore materialization writes <code>release.jks</code> + <code>keystore.properties</code> at repo root — both matched by the Phase 1 gitignore rules and consumed by the Phase 1 Gradle logic unchanged</li>
+        <li><code class="status">[x]</code> Create the workflow file as above; confirm the build-tools version present on the runner (<code>ls "$ANDROID_HOME"/build-tools/</code> in a step) and pin <code>apksigner</code>'s path accordingly, or glob the newest</li>
+        <li><code class="status">[x]</code> Keystore materialization writes <code>release.jks</code> + <code>keystore.properties</code> at repo root — both matched by the Phase 1 gitignore rules and consumed by the Phase 1 Gradle logic unchanged</li>
       </ul>
 
       <h4>2. Document the release process</h4>
       <ul class="checklist">
-        <li><code class="status">[]</code> README: add a "Release" section — how to cut a release (<code>git tag v1.0 &amp;&amp; git push origin v1.0</code>), where the APK lands, which secrets the workflow needs, and how to build a signed APK locally (<code>keystore.properties</code>)</li>
+        <li><code class="status">[x]</code> README: add a "Release" section — how to cut a release (<code>git tag v1.0 &amp;&amp; git push origin v1.0</code>), where the APK lands, which secrets the workflow needs, and how to build a signed APK locally (<code>keystore.properties</code>)</li>
       </ul>
 
       <h4>3. Testing Strategy</h4>
@@ -447,10 +447,10 @@ jobs:
     <h2>Validation Commands</h2>
     <p>Execute these commands to validate the entire plan is complete:</p>
     <ul class="checklist">
-      <li><code class="status">[]</code> <code>./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug</code> — the project's documented quality gates all pass locally</li>
-      <li><code class="status">[]</code> <code>./gradlew :app:assembleRelease &amp;&amp; "$ANDROID_HOME"/build-tools/*/apksigner verify app/build/outputs/apk/release/app-release.apk</code> — local signed release build verifies</li>
-      <li><code class="status">[]</code> <code>git status --porcelain | grep -E 'jks|keystore' ; test $? -eq 1</code> — no signing material is tracked or stageable</li>
-      <li><code class="status">[]</code> <code>gh pr checks</code> — CI workflow green on the open PR</li>
+      <li><code class="status">[x]</code> <code>./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug</code> — the project's documented quality gates all pass locally</li>
+      <li><code class="status">[x]</code> <code>./gradlew :app:assembleRelease &amp;&amp; "$ANDROID_HOME"/build-tools/*/apksigner verify app/build/outputs/apk/release/app-release.apk</code> — local signed release build verifies</li>
+      <li><code class="status">[x]</code> <code>git status --porcelain | grep -E 'jks|keystore' ; test $? -eq 1</code> — no signing material is tracked or stageable</li>
+      <li><code class="status">[x]</code> <code>gh pr checks</code> — CI workflow green on the open PR</li>
       <li><code class="status">[]</code> <code>gh run list --workflow=release.yml --limit 1</code> — most recent release dry-run concluded <code>success</code></li>
     </ul>
     <div class="loop">
