@@ -3,7 +3,6 @@ name: Release
 on:
   push:
     tags: ['v*']
-    branches: [github-actions]   # TEMP: pre-merge dry run — remove before merge
   workflow_dispatch:
 
 permissions:

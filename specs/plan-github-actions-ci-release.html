@@ -98,7 +98,7 @@
       <dl>
         <dt>created</dt>      <dd>2026-07-05</dd>
         <dt>modified</dt>     <dd>2026-07-05, 2026-07-06</dd>
-        <dt>commits</dt>      <dd>204ff12, a331396</dd>
+        <dt>commits</dt>      <dd>204ff12, a331396, 8e72dbe</dd>
         <dt>branches</dt>     <dd>github-actions</dd>
         <dt>agent name</dt>   <dd>Claude Fable 5 (claude-fable-5)</dd>
         <dt>session id</dt>   <dd>34d78313-b158-4402-905a-9c15ee9a9d76, 0bd7cb59-5594-4951-be74-040b87fd76a6</dd>
@@ -184,7 +184,7 @@
 
     <!-- ============ PHASE 1 ============ -->
     <div class="phase">
-      <h3><code class="status">[wip]</code> Phase 1: Release Signing Foundation</h3>
+      <h3><code class="status">[x]</code> Phase 1: Release Signing Foundation</h3>
       <p>Create the signing identity and make the Gradle build consume it optionally.
       Everything here must work before the release workflow can exist. The keystore is
       the permanent identity of the app — losing it means users must uninstall/reinstall
@@ -205,7 +205,7 @@ keytool -genkeypair -v \
   -validity 10950   # ~30 years</code></pre>
       <ul class="checklist">
         <li><code class="status">[x]</code> User generates <code>~/keystores/nocturne-release.jks</code> and records both passwords in a password manager</li>
-        <li><code class="status">[]</code> User backs the keystore file up somewhere durable (it is unrecoverable if lost)</li>
+        <li><code class="status">[x]</code> User backs the keystore file up somewhere durable (it is unrecoverable if lost) — backed up in 1Password</li>
       </ul>
 
       <h4>3. Optional signing config in <code>app/build.gradle.kts</code></h4>
@@ -428,10 +428,10 @@ jobs:
       (added, exercised, then removed before merge); the dispatch and tag paths are
       exercised post-merge.</p>
       <ul class="checklist">
-        <li><code class="status">[]</code> Temporarily add <code>push: { branches: [github-actions] }</code> to <code>release.yml</code>'s <code>on:</code> block and push via <code>gt submit</code> — the release job runs against this branch as a dry run</li>
-        <li><code class="status">[]</code> <code>gh run watch $(gh run list --workflow=release.yml --limit 1 --json databaseId -q '.[0].databaseId')</code> — run completes green, including the in-workflow <code>apksigner verify</code> step</li>
-        <li><code class="status">[]</code> <code>gh run download $(gh run list --workflow=release.yml --limit 1 --json databaseId -q '.[0].databaseId')</code> then <code>"$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs nocturne-*.apk</code> — downloaded artifact carries the release certificate</li>
-        <li><code class="status">[]</code> Remove the temporary <code>push</code> trigger from <code>release.yml</code> before merge (final <code>on:</code> = tags + dispatch only)</li>
+        <li><code class="status">[x]</code> Temporarily add <code>push: { branches: [github-actions] }</code> to <code>release.yml</code>'s <code>on:</code> block and push via <code>gt submit</code> — the release job runs against this branch as a dry run</li>
+        <li><code class="status">[x]</code> <code>gh run watch $(gh run list --workflow=release.yml --limit 1 --json databaseId -q '.[0].databaseId')</code> — run completes green, including the in-workflow <code>apksigner verify</code> step</li>
+        <li><code class="status">[x]</code> <code>gh run download $(gh run list --workflow=release.yml --limit 1 --json databaseId -q '.[0].databaseId')</code> then <code>"$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs nocturne-*.apk</code> — downloaded artifact carries the release certificate</li>
+        <li><code class="status">[x]</code> Remove the temporary <code>push</code> trigger from <code>release.yml</code> before merge (final <code>on:</code> = tags + dispatch only)</li>
         <li><code class="status">[]</code> (post-merge) <code>gh workflow run release.yml</code> — dispatch path works from <code>main</code></li>
         <li><code class="status">[]</code> (post-merge) <code>git tag v1.0 &amp;&amp; git push origin v1.0</code>, then <code>gh release view v1.0</code> — GitHub Release exists with <code>nocturne-v1.0.apk</code> attached</li>
       </ul>
@@ -451,7 +451,7 @@ jobs:
       <li><code class="status">[x]</code> <code>./gradlew :app:assembleRelease &amp;&amp; "$ANDROID_HOME"/build-tools/*/apksigner verify app/build/outputs/apk/release/app-release.apk</code> — local signed release build verifies</li>
       <li><code class="status">[x]</code> <code>git status --porcelain | grep -E 'jks|keystore' ; test $? -eq 1</code> — no signing material is tracked or stageable</li>
       <li><code class="status">[x]</code> <code>gh pr checks</code> — CI workflow green on the open PR</li>
-      <li><code class="status">[]</code> <code>gh run list --workflow=release.yml --limit 1</code> — most recent release dry-run concluded <code>success</code></li>
+      <li><code class="status">[x]</code> <code>gh run list --workflow=release.yml --limit 1</code> — most recent release dry-run concluded <code>success</code></li>
     </ul>
     <div class="loop">
       🔁 <strong>The plan is not complete until every box is checked and every command passes. If for some reason a step is not possible to complete, mark it with [f] and move on if possible.</strong>
