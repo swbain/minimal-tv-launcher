@@ -2,7 +2,7 @@ package com.pavlovsfrog.minimaltvlauncher.theme
 
 import androidx.compose.ui.graphics.Color
 
-/** Nocturne palette. Amber/SunDot are sRGB conversions of oklch(0.78 0.15 75) / (0.82 0.15 78). */
+/** Nocturne palette. Focus/SunDot are sRGB conversions of oklch(0.75 0.12 255) / (0.82 0.15 78). */
 object NocturneColors {
   /** Screen base under the wallpaper. */
   val BaseBlack = Color(0xFF08090C)
@@ -29,7 +29,7 @@ object NocturneColors {
   val TextMuted = Color(0xFF7C7F88)
 
   /** Focus ring + glow. */
-  val Amber = Color(0xFFEFA831)
+  val Focus = Color(0xFF79B1F9)
 
   /** Weather sun dot. */
   val SunDot = Color(0xFFF9B73F)

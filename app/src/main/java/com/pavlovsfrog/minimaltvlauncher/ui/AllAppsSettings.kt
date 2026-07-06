@@ -156,7 +156,7 @@ private fun BackButton(onClick: () -> Unit) {
     ),
     border = ClickableSurfaceDefaults.border(
       border = Border(BorderStroke(1.dp, NocturneColors.GearBorder)),
-      focusedBorder = Border(BorderStroke(2.dp, NocturneColors.Amber)),
+      focusedBorder = Border(BorderStroke(2.dp, NocturneColors.Focus)),
     ),
     scale = ClickableSurfaceDefaults.scale(focusedScale = 1.08f),
     modifier = Modifier
@@ -205,7 +205,7 @@ private fun AppRow(entry: AppEntry, onToggle: () -> Unit, modifier: Modifier = M
         Text(
           text = if (entry.isFavorite) "★" else "☆",
           fontSize = 14.sp,
-          color = if (entry.isFavorite) NocturneColors.Amber else NocturneColors.StarOff,
+          color = if (entry.isFavorite) NocturneColors.Focus else NocturneColors.StarOff,
         )
       }
       // Focus indicator: amber accent bar hugging the row's leading edge.
@@ -216,7 +216,7 @@ private fun AppRow(entry: AppEntry, onToggle: () -> Unit, modifier: Modifier = M
           .width(3.dp)
           .height(18.dp)
           .clip(RoundedCornerShape(1.5.dp))
-          .background(if (focused) NocturneColors.Amber else Color.Transparent),
+          .background(if (focused) NocturneColors.Focus else Color.Transparent),
       )
     }
   }

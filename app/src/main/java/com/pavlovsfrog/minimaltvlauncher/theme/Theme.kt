@@ -6,7 +6,7 @@ import androidx.tv.material3.darkColorScheme
 
 /**
  * Nocturne theme: always dark (TV UIs sit in dim living rooms; we don't follow the system
- * light/dark setting), Newsreader serif typography, amber accent.
+ * light/dark setting), Newsreader serif typography, blue focus accent.
  */
 @Composable
 fun MinimalTvLauncherTheme(content: @Composable () -> Unit) {
@@ -20,7 +20,7 @@ fun MinimalTvLauncherTheme(content: @Composable () -> Unit) {
         onSurfaceVariant = NocturneColors.TextSecondary,
         border = NocturneColors.CardBorder,
         borderVariant = NocturneColors.CardBorder,
-        primary = NocturneColors.Amber,
+        primary = NocturneColors.Focus,
       ),
     typography = NocturneTypography,
     content = content,
