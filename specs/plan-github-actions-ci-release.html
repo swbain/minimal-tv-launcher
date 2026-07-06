@@ -98,8 +98,8 @@
       <dl>
         <dt>created</dt>      <dd>2026-07-05</dd>
         <dt>modified</dt>     <dd>2026-07-05, 2026-07-06</dd>
-        <dt>commits</dt>      <dd>204ff12, a331396, 8e72dbe</dd>
-        <dt>branches</dt>     <dd>github-actions</dd>
+        <dt>commits</dt>      <dd>204ff12, a331396, 8e72dbe, be84c04, 835a8e1</dd>
+        <dt>branches</dt>     <dd>github-actions, ci-plan-postmerge</dd>
         <dt>agent name</dt>   <dd>Claude Fable 5 (claude-fable-5)</dd>
         <dt>session id</dt>   <dd>34d78313-b158-4402-905a-9c15ee9a9d76, 0bd7cb59-5594-4951-be74-040b87fd76a6</dd>
         <dt>back refs</dt>    <dd>specs/plan-nocturne-tv-launcher.html, specs/plan-reorder-apps-move-mode.html</dd>
@@ -436,7 +436,7 @@ jobs:
         <li><code class="status">[x]</code> <code>gh run watch $(gh run list --workflow=release.yml --limit 1 --json databaseId -q '.[0].databaseId')</code> — run completes green, including the in-workflow <code>apksigner verify</code> step</li>
         <li><code class="status">[x]</code> <code>gh run download $(gh run list --workflow=release.yml --limit 1 --json databaseId -q '.[0].databaseId')</code> then <code>"$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs nocturne-*.apk</code> — downloaded artifact carries the release certificate</li>
         <li><code class="status">[x]</code> Remove the temporary <code>push</code> trigger from <code>release.yml</code> before merge (final <code>on:</code> = tags + dispatch only)</li>
-        <li><code class="status">[]</code> (post-merge) <code>gh workflow run release.yml</code> — dispatch path works from <code>main</code></li>
+        <li><code class="status">[x]</code> (post-merge) <code>gh workflow run release.yml</code> — dispatch path works from <code>main</code> (run 28770411765 green)</li>
         <li><code class="status">[]</code> (post-merge) <code>git tag v1.0 &amp;&amp; git push origin v1.0</code>, then <code>gh release view v1.0</code> — GitHub Release exists with <code>nocturne-v1.0.apk</code> attached</li>
       </ul>
       <div class="loop">
@@ -447,7 +447,7 @@ jobs:
 
     <!-- ============ PHASE 4 (amendment 2026-07-06) ============ -->
     <div class="phase">
-      <h3><code class="status">[wip]</code> Phase 4: Split PR Checks into Parallel Jobs</h3>
+      <h3><code class="status">[x]</code> Phase 4: Split PR Checks into Parallel Jobs</h3>
       <p>User decision (2026-07-06): trade the single-invocation efficiency of Phase 2
       for per-gate granularity — <code>build</code>, <code>unit-tests</code>, and
       <code>lint</code> as three independent jobs that start simultaneously. Each PR
@@ -457,19 +457,19 @@ jobs:
 
       <h4>1. Rework <code>ci.yml</code> into three jobs</h4>
       <ul class="checklist">
-        <li><code class="status">[]</code> Replace the single <code>checks</code> job with <code>build</code> (<code>:app:assembleDebug</code>), <code>unit-tests</code> (<code>:app:testDebugUnitTest</code>), and <code>lint</code> (<code>:app:lintDebug</code>) — no <code>needs:</code> between them, each with checkout / temurin JDK 17 / <code>gradle/actions/setup-gradle@v4</code></li>
-        <li><code class="status">[]</code> Distinct failure-artifact names per job (<code>test-reports</code>, <code>lint-reports</code>) — <code>upload-artifact@v4</code> hard-fails on duplicate names across parallel jobs</li>
-        <li><code class="status">[]</code> Cache policy: only <code>build</code> keeps the main-push cache-write guard; <code>unit-tests</code> and <code>lint</code> are always <code>cache-read-only: true</code> so three parallel jobs never race cache writes</li>
+        <li><code class="status">[x]</code> Replace the single <code>checks</code> job with <code>build</code> (<code>:app:assembleDebug</code>), <code>unit-tests</code> (<code>:app:testDebugUnitTest</code>), and <code>lint</code> (<code>:app:lintDebug</code>) — no <code>needs:</code> between them, each with checkout / temurin JDK 17 / <code>gradle/actions/setup-gradle@v4</code></li>
+        <li><code class="status">[x]</code> Distinct failure-artifact names per job (<code>test-reports</code>, <code>lint-reports</code>) — <code>upload-artifact@v4</code> hard-fails on duplicate names across parallel jobs</li>
+        <li><code class="status">[x]</code> Cache policy: only <code>build</code> keeps the main-push cache-write guard; <code>unit-tests</code> and <code>lint</code> are always <code>cache-read-only: true</code> so three parallel jobs never race cache writes</li>
       </ul>
 
       <h4>2. Testing Strategy</h4>
       <p>Same as Phase 2: the only true validation is a live run on the PR. Each gate's
       Gradle task must also pass locally before pushing.</p>
       <ul class="checklist">
-        <li><code class="status">[]</code> <code>./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug</code> — all three gates pass locally before the split ships</li>
-        <li><code class="status">[]</code> <code>gt submit</code> — pushes the reworked workflow to the open PR</li>
-        <li><code class="status">[]</code> <code>gh run watch $(gh run list --workflow=ci.yml --limit 1 --json databaseId -q '.[0].databaseId')</code> — run completes green with all three jobs</li>
-        <li><code class="status">[]</code> <code>gh pr checks</code> — <code>build</code>, <code>unit-tests</code>, and <code>lint</code> each reported as separate checks on the PR</li>
+        <li><code class="status">[x]</code> <code>./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug</code> — all three gates pass locally before the split ships</li>
+        <li><code class="status">[x]</code> <code>gt submit</code> — pushes the reworked workflow to the open PR</li>
+        <li><code class="status">[x]</code> <code>gh run watch $(gh run list --workflow=ci.yml --limit 1 --json databaseId -q '.[0].databaseId')</code> — run completes green with all three jobs (build 3m28s, lint 2m58s, unit-tests 2m25s)</li>
+        <li><code class="status">[x]</code> <code>gh pr checks</code> — <code>build</code>, <code>unit-tests</code>, and <code>lint</code> each reported as separate checks on the PR</li>
       </ul>
       <div class="loop">
         🔁 <strong>Do not exit this phase until every box above is checked.</strong>
