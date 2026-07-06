@@ -43,6 +43,24 @@ object NocturneColors {
   /** Full-screen scrim behind the long-press action menu — rgba(5,6,9,0.55). */
   val MenuScrim = Color(0xFF050609).copy(alpha = 0.55f)
 
+  /** Anchored menu-card surface — rgba(13,14,19,0.96). */
+  val MenuCardFill = Color(0xFF0D0E13).copy(alpha = 0.96f)
+
+  /** Menu-card hairline border — rgba(255,255,255,0.12). */
+  val MenuCardBorder = Color.White.copy(alpha = 0.12f)
+
+  /** Focused menu-card item fill — rgba(255,255,255,0.10). */
+  val MenuItemFocusFill = Color.White.copy(alpha = 0.10f)
+
+  /** Menu-card header (uppercase app name) — #8a8e99. */
+  val MenuHeader = Color(0xFF8A8E99)
+
+  /** Menu-card item label — #f0f1f4. */
+  val MenuLabel = Color(0xFFF0F1F4)
+
+  /** Move-mode hint pill fill — rgba(13,14,19,0.92). */
+  val HintPillFill = Color(0xFF0D0E13).copy(alpha = 0.92f)
+
   /** Action-menu circle fill — rgba(20,21,27,0.92). */
   val MenuCircle = Color(0xFF14151B).copy(alpha = 0.92f)
 

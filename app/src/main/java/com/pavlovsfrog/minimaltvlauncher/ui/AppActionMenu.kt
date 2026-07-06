@@ -13,13 +13,12 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -43,6 +42,8 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -59,17 +60,17 @@ import com.pavlovsfrog.minimaltvlauncher.theme.NocturneColors
 import kotlin.math.roundToInt
 
 // Design §2, px ÷ 2 = dp/sp (1080p TV = xhdpi 2.0).
-private val CircleSize = 33.dp
-private val ItemWidth = 48.dp
-private val ItemGap = 10.dp
-private val RowOffsetFromTile = 9.dp
+private val CardWidth = 170.dp
+private val CardRadius = 7.dp
+private val CardGap = 8.dp        // anchor.right → card, and the flip offset
 private val EdgeMargin = 12.dp
 private val ConfirmKeys = setOf(Key.Enter, Key.NumPadEnter, Key.DirectionCenter)
 
 /**
- * The long-press overlay: full-screen scrim, a lifted ghost of the pressed tile, and the
- * Hide · Uninstall · Cancel action row anchored below the tile (above when it would clip
- * the bottom edge). Focus opens on Hide; Back, Cancel, and the scrim all dismiss.
+ * The long-press overlay: full-screen scrim, a lifted ghost of the pressed tile, and the anchored
+ * menu card (Move · Hide from favorites · Open app settings · Uninstall · Cancel) placed to the
+ * right of the tile — flipping to the left when it would overflow, clamped so it never clips an
+ * edge. Focus opens on Move; Back, Cancel, and the scrim all dismiss.
  */
 @Composable
 fun AppActionMenu(
@@ -80,12 +81,12 @@ fun AppActionMenu(
   var entered by remember { mutableStateOf(false) }
   LaunchedEffect(Unit) { entered = true }
   val scrimAlpha by animateFloatAsState(if (entered) 1f else 0f, tween(180), label = "scrim")
-  val rowAlpha by animateFloatAsState(if (entered) 1f else 0f, tween(160), label = "rowAlpha")
-  val rowRise by animateFloatAsState(if (entered) 0f else 1f, tween(160), label = "rowRise")
+  val cardAlpha by animateFloatAsState(if (entered) 1f else 0f, tween(160), label = "cardAlpha")
+  val cardRise by animateFloatAsState(if (entered) 0f else 1f, tween(160), label = "cardRise")
 
-  // The OK press that opened the menu may still be held: its auto-repeat downs and its
-  // release must not "click" the freshly-focused Hide button. A fresh press is recognized
-  // by repeatCount == 0; only its key-up may click.
+  // The OK press that opened the menu may still be held: its auto-repeat downs and its release
+  // must not "click" the freshly-focused Move item. A fresh press is recognized by repeatCount ==
+  // 0; only its key-up may click.
   var sawFreshDown by remember { mutableStateOf(false) }
 
   BackHandler { onAction(LauncherAction.MenuDismissed) }
@@ -119,28 +120,29 @@ fun AppActionMenu(
 
     GhostTile(app = app, bounds = anchorBounds)
 
-    // Custom layout: the anchor is in root pixels, so place the row in pixels too.
+    // Custom layout: the anchor is in root pixels, so place the card in pixels too.
     Layout(
-      content = { ActionRow(app = app, onAction = onAction) },
+      content = { MenuCard(app = app, onAction = onAction) },
       modifier = Modifier
         .fillMaxSize()
         .graphicsLayer {
-          alpha = rowAlpha
-          translationY = rowRise * 5.dp.toPx()
+          alpha = cardAlpha
+          translationY = cardRise * 10.dp.toPx()
         },
     ) { measurables, constraints ->
-      val row = measurables.first().measure(Constraints())
+      val card = measurables.first().measure(Constraints())
       layout(constraints.maxWidth, constraints.maxHeight) {
         val margin = EdgeMargin.roundToPx()
-        val gap = RowOffsetFromTile.roundToPx()
-        val x = (anchorBounds.center.x - row.width / 2f).roundToInt()
-          .coerceIn(margin, (constraints.maxWidth - margin - row.width).coerceAtLeast(margin))
-        var y = (anchorBounds.bottom + gap).roundToInt()
-        if (y + row.height > constraints.maxHeight - margin) {
-          // Would clip the bottom edge — flip above the tile.
-          y = (anchorBounds.top - gap - row.height).roundToInt()
-        }
-        row.place(x, y)
+        val gap = CardGap.roundToPx()
+        val maxX = (constraints.maxWidth - margin - card.width).coerceAtLeast(margin)
+        // Prefer the right of the tile; flip left if the card would overflow the right edge.
+        val rightX = anchorBounds.right.roundToInt() + gap
+        val x =
+          if (rightX + card.width <= constraints.maxWidth - margin) rightX
+          else anchorBounds.left.roundToInt() - gap - card.width
+        val y = anchorBounds.top.roundToInt()
+          .coerceIn(margin, (constraints.maxHeight - margin - card.height).coerceAtLeast(margin))
+        card.place(x.coerceIn(margin, maxX), y)
       }
     }
   }
@@ -167,72 +169,75 @@ private fun GhostTile(app: AppInfo, bounds: Rect) {
   }
 }
 
+/**
+ * The anchored menu card. Deliberately sans-serif — it reads as a utility surface, breaking from
+ * the Newsreader launcher type. Five items, no wrap; focus opens on Move.
+ */
 @Composable
-private fun ActionRow(app: AppInfo, onAction: (LauncherAction) -> Unit) {
-  val hideFocus = remember { FocusRequester() }
-  LaunchedEffect(Unit) { hideFocus.requestFocus() }
+private fun MenuCard(app: AppInfo, onAction: (LauncherAction) -> Unit) {
+  val moveFocus = remember { FocusRequester() }
+  LaunchedEffect(Unit) { runCatching { moveFocus.requestFocus() } }
 
-  Row(horizontalArrangement = Arrangement.spacedBy(ItemGap)) {
-    MenuItem(
-      glyph = "⊘",
-      label = "Hide",
-      onClick = { onAction(LauncherAction.HideApp(app)) },
-      focusRequester = hideFocus,
+  Column(
+    modifier = Modifier
+      .width(CardWidth)
+      .clip(RoundedCornerShape(CardRadius))
+      .background(NocturneColors.MenuCardFill)
+      .border(1.dp, NocturneColors.MenuCardBorder, RoundedCornerShape(CardRadius))
+      .padding(5.dp),
+    verticalArrangement = Arrangement.spacedBy(2.dp),
+  ) {
+    Text(
+      text = app.label.uppercase(),
+      fontFamily = FontFamily.SansSerif,
+      fontSize = 7.5.sp,
+      fontWeight = FontWeight.Medium,
+      letterSpacing = 1.sp,
+      color = NocturneColors.MenuHeader,
+      modifier = Modifier.padding(start = 7.dp, top = 5.dp, bottom = 3.dp),
     )
-    MenuItem(
-      glyph = "✕",
-      label = "Uninstall",
-      glyphColor = NocturneColors.DangerText,
-      onClick = { onAction(LauncherAction.UninstallApp(app)) },
-    )
-    MenuItem(
-      glyph = "‹",
-      label = "Cancel",
-      onClick = { onAction(LauncherAction.MenuDismissed) },
-    )
+    MenuCardItem("Move", focusRequester = moveFocus) { onAction(LauncherAction.MoveApp(app)) }
+    MenuCardItem("Hide from favorites") { onAction(LauncherAction.HideApp(app)) }
+    MenuCardItem("Open app settings") { onAction(LauncherAction.OpenAppSettings(app)) }
+    MenuCardItem("Uninstall", danger = true) { onAction(LauncherAction.UninstallApp(app)) }
+    MenuCardItem("Cancel") { onAction(LauncherAction.MenuDismissed) }
   }
 }
 
 @Composable
-private fun MenuItem(
-  glyph: String,
+private fun MenuCardItem(
   label: String,
-  onClick: () -> Unit,
-  glyphColor: Color = NocturneColors.TextWeather,
+  danger: Boolean = false,
   focusRequester: FocusRequester? = null,
+  onClick: () -> Unit,
 ) {
-  Column(
-    horizontalAlignment = Alignment.CenterHorizontally,
-    modifier = Modifier.width(ItemWidth),
+  val labelColor = if (danger) NocturneColors.DangerText else NocturneColors.MenuLabel
+  Surface(
+    onClick = onClick,
+    shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(5.dp)),
+    colors = ClickableSurfaceDefaults.colors(
+      containerColor = Color.Transparent,
+      contentColor = labelColor,
+      focusedContainerColor = NocturneColors.MenuItemFocusFill,
+      focusedContentColor = labelColor,
+      pressedContainerColor = NocturneColors.MenuItemFocusFill,
+      pressedContentColor = labelColor,
+    ),
+    border = ClickableSurfaceDefaults.border(
+      focusedBorder = Border(BorderStroke(1.dp, NocturneColors.Amber)),
+    ),
+    scale = ClickableSurfaceDefaults.scale(focusedScale = 1f),
+    modifier = Modifier
+      .fillMaxWidth()
+      .then(focusRequester?.let { Modifier.focusRequester(it) } ?: Modifier),
   ) {
-    Surface(
-      onClick = onClick,
-      shape = ClickableSurfaceDefaults.shape(CircleShape),
-      colors = ClickableSurfaceDefaults.colors(
-        containerColor = NocturneColors.MenuCircle,
-        contentColor = glyphColor,
-        focusedContainerColor = NocturneColors.MenuCircleFocused,
-        focusedContentColor = NocturneColors.MenuGlyphFocused,
-        pressedContainerColor = NocturneColors.MenuCircleFocused,
-        pressedContentColor = NocturneColors.MenuGlyphFocused,
-      ),
-      border = ClickableSurfaceDefaults.border(
-        focusedBorder = Border(BorderStroke(2.dp, NocturneColors.Amber)),
-      ),
-      scale = ClickableSurfaceDefaults.scale(focusedScale = 1.08f),
-      modifier = Modifier
-        .size(CircleSize)
-        .then(focusRequester?.let { Modifier.focusRequester(it) } ?: Modifier),
-    ) {
-      Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(text = glyph, fontSize = 13.sp)
-      }
-    }
     Text(
       text = label,
-      fontSize = 9.sp,
-      color = NocturneColors.TextSecondary,
-      modifier = Modifier.padding(top = 4.dp),
+      fontFamily = FontFamily.SansSerif,
+      fontSize = 11.sp,
+      fontWeight = FontWeight.Medium,
+      color = labelColor,
+      modifier = Modifier.padding(horizontal = 7.dp, vertical = 6.dp),
     )
   }
 }
