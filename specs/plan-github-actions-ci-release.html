@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plan: GitHub Actions — PR Checks &amp; Signed Release Builds</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --panel: #161b22;
+    --panel-2: #1c2129;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #9198a1;
+    --accent: #3fb950;        /* Actions-green: workflow runs, checks passing */
+    --accent-dim: #238636;
+    --warn: #d29922;
+    --danger: #f85149;
+    --link: #58a6ff;
+    --mono: "SFMono-Regular", ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, "Segoe UI", Roboto, "Inter", Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 2.5rem 1.5rem 6rem;
+    background: var(--bg); color: var(--text);
+    font-family: var(--sans); font-size: 16px; line-height: 1.6;
+  }
+  main { max-width: 880px; margin: 0 auto; }
+  h1 { font-size: 1.7rem; line-height: 1.25; border-bottom: 1px solid var(--border); padding-bottom: .75rem; }
+  h1::before { content: "⚙ "; color: var(--accent); }
+  h2 {
+    font-size: 1.25rem; margin-top: 2.75rem; padding-bottom: .4rem;
+    border-bottom: 1px solid var(--border); color: var(--accent);
+  }
+  h3 { font-size: 1.05rem; margin-top: 1.75rem; }
+  h4 { font-size: .95rem; margin: 1.5rem 0 .5rem; color: var(--text); }
+  p { margin: .6rem 0; }
+  a { color: var(--link); }
+  code {
+    font-family: var(--mono); font-size: .85em;
+    background: var(--panel-2); border: 1px solid var(--border);
+    border-radius: 5px; padding: .1em .35em;
+  }
+  pre {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+    padding: 1rem; overflow-x: auto; line-height: 1.45;
+  }
+  pre code { background: none; border: none; padding: 0; font-size: .82rem; }
+  ul { padding-left: 1.4rem; }
+  li { margin: .3rem 0; }
+  .meta { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: .5rem .9rem; margin-top: 1rem; }
+  .meta summary { cursor: pointer; color: var(--muted); font-size: .85rem; }
+  .meta dl { display: grid; grid-template-columns: 9rem 1fr; gap: .25rem .75rem; font-size: .82rem; margin: .75rem 0 .4rem; }
+  .meta dt { color: var(--muted); font-family: var(--mono); }
+  .meta dd { margin: 0; font-family: var(--mono); word-break: break-all; }
+  .tag {
+    display: inline-block; font-size: .7rem; font-family: var(--mono);
+    padding: .05rem .45rem; border-radius: 999px; vertical-align: 1px; margin-right: .3rem;
+  }
+  .tag.existing { background: #1f3a5f; color: #79b8ff; border: 1px solid #2f5a8f; }
+  .tag.new { background: #12341c; color: #56d364; border: 1px solid var(--accent-dim); }
+  .phase {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    padding: 1rem 1.4rem 1.4rem; margin: 1.5rem 0;
+  }
+  .phase > h3 { margin-top: .4rem; }
+  .checklist { list-style: none; padding-left: .25rem; }
+  .checklist li { margin: .45rem 0; padding-left: .2rem; }
+  .status { color: var(--warn); font-weight: 600; margin-right: .35rem; white-space: nowrap; }
+  .loop {
+    margin-top: 1.1rem; padding: .7rem 1rem; font-size: .88rem;
+    background: rgba(63,185,80,.07); border: 1px dashed var(--accent-dim); border-radius: 8px;
+  }
+  #questionables details, #amendments details {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+    padding: .6rem 1rem; margin: .6rem 0;
+  }
+  #questionables summary, #amendments summary { cursor: pointer; font-weight: 600; }
+  .qa-answer { color: var(--muted); margin-top: .6rem; }
+  .callout {
+    border-left: 3px solid var(--warn); background: rgba(210,153,34,.08);
+    padding: .6rem 1rem; border-radius: 0 8px 8px 0; margin: 1rem 0; font-size: .92rem;
+  }
+  table { border-collapse: collapse; width: 100%; font-size: .9rem; margin: 1rem 0; }
+  th, td { border: 1px solid var(--border); padding: .45rem .7rem; text-align: left; }
+  th { background: var(--panel-2); }
+</style>
+</head>
+<body>
+<main>
+
+  <!-- ===== HEADER + UPDATABLE METADATA ===== -->
+  <header>
+    <h1>Plan: GitHub Actions — PR Checks &amp; Signed Release Builds</h1>
+    <details class="meta">
+      <summary>Metadata</summary>
+      <dl>
+        <dt>created</dt>      <dd>2026-07-05</dd>
+        <dt>modified</dt>     <dd>2026-07-05</dd>
+        <dt>commits</dt>      <dd>204ff12</dd>
+        <dt>branches</dt>     <dd>github-actions</dd>
+        <dt>agent name</dt>   <dd>Claude Fable 5 (claude-fable-5)</dd>
+        <dt>session id</dt>   <dd>34d78313-b158-4402-905a-9c15ee9a9d76</dd>
+        <dt>back refs</dt>    <dd>specs/plan-nocturne-tv-launcher.html, specs/plan-reorder-apps-move-mode.html</dd>
+        <dt>forward refs</dt> <dd>—</dd>
+      </dl>
+    </details>
+  </header>
+
+  <!-- ===== PURPOSE / PROBLEM / SOLUTION ===== -->
+  <section id="purpose">
+    <h2>Purpose</h2>
+    <p>Add CI/CD to Nocturne via GitHub Actions: fast PR checks (debug build, JVM unit
+    tests, lint) on every pull request, and an on-demand / tag-driven workflow that
+    produces <strong>signed release APKs</strong> attached to GitHub Releases. Since the
+    project has no release signing config yet, this plan also establishes one — a
+    keystore kept out of git, wired through <code>keystore.properties</code> locally and
+    GitHub secrets in CI.</p>
+  </section>
+
+  <section id="problem">
+    <h2>Problem</h2>
+    <p>The repo (<code>swbain/minimal-tv-launcher</code>) has no <code>.github/</code>
+    directory: nothing verifies that a PR compiles, passes
+    <code>testDebugUnitTest</code>, or is lint-clean before merge. There is also no way
+    to produce an installable release build — <code>app/build.gradle.kts</code> declares
+    no <code>signingConfigs</code>, so <code>:app:assembleRelease</code> currently emits
+    an <em>unsigned</em> APK that Android refuses to install. The gitignore does not
+    protect keystore files, so naive signing setup risks committing secrets.</p>
+  </section>
+
+  <section id="solution">
+    <h2>Solution</h2>
+    <p>Three phases, in dependency order:</p>
+    <p><strong>1) Release signing foundation.</strong> Generate a release keystore once
+    (kept outside the repo, backed up by the user). Teach
+    <code>app/build.gradle.kts</code> to read signing credentials from a gitignored
+    <code>keystore.properties</code> at the repo root; when the file is absent (fresh
+    clones, PR CI) the release build type simply stays unsigned, so nothing breaks for
+    anyone without keys. Store the keystore (base64) and its passwords as GitHub Actions
+    secrets.</p>
+    <p><strong>2) PR checks workflow</strong> (<code>ci.yml</code>): one Ubuntu job per
+    run — <code>:app:assembleDebug :app:testDebugUnitTest :app:lintDebug</code> — the
+    exact quality gates the README documents. Gradle caching via
+    <code>gradle/actions/setup-gradle</code>, concurrency-cancel superseded runs, upload
+    test/lint reports on failure. Instrumented tests are deliberately excluded (they need
+    a TV emulator; per CLAUDE.md, UI verification is journey-based and local).</p>
+    <p><strong>3) Release workflow</strong> (<code>release.yml</code>): triggered by
+    pushing a <code>v*</code> tag or manually via <code>workflow_dispatch</code>.
+    Reconstructs the keystore from secrets, runs <code>:app:assembleRelease</code>,
+    verifies the signature with <code>apksigner</code>, uploads the APK as a build
+    artifact, and — on tag runs — creates a GitHub Release with the APK attached as
+    <code>nocturne-&lt;tag&gt;.apk</code>.</p>
+  </section>
+
+  <!-- ===== RELEVANT FILES ===== -->
+  <section id="files" class="files">
+    <h2>Relevant Files</h2>
+
+    <h3>Existing Files</h3>
+    <ul>
+      <li><span class="tag existing">existing</span> <code>app/build.gradle.kts</code> — add <code>signingConfigs.release</code> fed by <code>keystore.properties</code>; wire into the <code>release</code> build type</li>
+      <li><span class="tag existing">existing</span> <code>.gitignore</code> — add <code>*.jks</code>, <code>*.keystore</code>, <code>keystore.properties</code> so signing material can never be committed</li>
+      <li><span class="tag existing">existing</span> <code>README.md</code> — document the release process (tagging, secrets, local signed builds)</li>
+      <li><span class="tag existing">existing</span> <code>gradle/wrapper/gradle-wrapper.properties</code> — Gradle 9.4.1; CI uses the wrapper, no version pinning needed in workflows</li>
+      <li><span class="tag existing">existing</span> <code>gradle.properties</code> — configuration-cache + build-cache already on; benefits CI runs as-is</li>
+    </ul>
+
+    <h3>New Files</h3>
+    <ul>
+      <li><span class="tag new">new</span> <code>.github/workflows/ci.yml</code> — PR checks: build + unit tests + lint on <code>pull_request</code> and pushes to <code>main</code></li>
+      <li><span class="tag new">new</span> <code>.github/workflows/release.yml</code> — signed release APK on <code>v*</code> tags and manual dispatch; attaches APK to a GitHub Release</li>
+      <li><span class="tag new">new</span> <code>keystore.properties</code> — <em>local only, gitignored</em>: storeFile/storePassword/keyAlias/keyPassword</li>
+      <li><span class="tag new">new</span> <code>~/keystores/nocturne-release.jks</code> — <em>outside the repo</em>: the release keystore, generated once with <code>keytool</code></li>
+    </ul>
+  </section>
+
+  <!-- ===== IMPLEMENTATION PHASES ===== -->
+  <section id="phases">
+    <h2>Implementation Phases</h2>
+    <p><strong>IMPORTANT:</strong> Execute every phase and task step by step, in order, top to bottom.</p>
+    <p>Status markers: <code>[]</code> idle · <code>[wip]</code> in progress · <code>[x]</code> complete · <code>[f]</code> failed. All start as <code>[]</code>; the Build Plan workflow updates them as it works.</p>
+
+    <!-- ============ PHASE 1 ============ -->
+    <div class="phase">
+      <h3><code class="status">[wip]</code> Phase 1: Release Signing Foundation</h3>
+      <p>Create the signing identity and make the Gradle build consume it optionally.
+      Everything here must work before the release workflow can exist. The keystore is
+      the permanent identity of the app — losing it means users must uninstall/reinstall
+      to update, so back it up.</p>
+
+      <h4>1. Protect signing material in git</h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> Append to root <code>.gitignore</code>: <code>*.jks</code>, <code>*.keystore</code>, <code>keystore.properties</code></li>
+      </ul>
+
+      <h4>2. Generate the release keystore (one-time, user-run)</h4>
+      <p>This is interactive (passwords, DN prompts) — the user runs it, not the agent:</p>
+      <pre><code>mkdir -p ~/keystores
+keytool -genkeypair -v \
+  -keystore ~/keystores/nocturne-release.jks \
+  -alias nocturne \
+  -keyalg RSA -keysize 4096 \
+  -validity 10950   # ~30 years</code></pre>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> User generates <code>~/keystores/nocturne-release.jks</code> and records both passwords in a password manager</li>
+        <li><code class="status">[]</code> User backs the keystore file up somewhere durable (it is unrecoverable if lost)</li>
+      </ul>
+
+      <h4>3. Optional signing config in <code>app/build.gradle.kts</code></h4>
+      <p>Read <code>keystore.properties</code> from the repo root at configuration time;
+      absence is not an error (fresh clones and PR CI build unsigned). Compatible with the
+      enabled configuration cache — file reads at configuration time are tracked inputs.</p>
+      <pre><code>import java.util.Properties
+
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val releaseSigningAvailable = keystorePropertiesFile.exists()
+val keystoreProperties = Properties().apply {
+  if (releaseSigningAvailable) keystorePropertiesFile.inputStream().use(::load)
+}
+
+android {
+  signingConfigs {
+    if (releaseSigningAvailable) {
+      create("release") {
+        storeFile = rootProject.file(keystoreProperties.getProperty("storeFile"))
+        storePassword = keystoreProperties.getProperty("storePassword")
+        keyAlias = keystoreProperties.getProperty("keyAlias")
+        keyPassword = keystoreProperties.getProperty("keyPassword")
+      }
+    }
+  }
+  buildTypes {
+    release {
+      if (releaseSigningAvailable) {
+        signingConfig = signingConfigs.getByName("release")
+      }
+      // existing minify/proguard lines unchanged
+    }
+  }
+}</code></pre>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> Add the conditional <code>signingConfigs</code> block and release wiring shown above</li>
+        <li><code class="status">[]</code> Create local <code>keystore.properties</code> (gitignored) with <code>storeFile=/home/stephen/keystores/nocturne-release.jks</code> (absolute path — <code>rootProject.file()</code> does <em>not</em> expand <code>~</code>) and alias <code>nocturne</code></li>
+        <li><code class="status">[x]</code> Confirm <code>git status</code> shows neither <code>keystore.properties</code> nor any <code>.jks</code> file</li>
+      </ul>
+
+      <h4>4. Register GitHub Actions secrets</h4>
+      <pre><code>base64 -w0 ~/keystores/nocturne-release.jks | gh secret set RELEASE_KEYSTORE_B64
+gh secret set RELEASE_KEYSTORE_PASSWORD   # paste when prompted
+gh secret set RELEASE_KEY_ALIAS           # nocturne
+gh secret set RELEASE_KEY_PASSWORD</code></pre>
+      <ul class="checklist">
+        <li><code class="status">[]</code> All four secrets set; verify with <code>gh secret list</code></li>
+      </ul>
+
+      <h4>5. Testing Strategy</h4>
+      <p>Validate both paths of the optional config: signed when the properties file is
+      present, still-buildable (unsigned) when it is absent. Signature verified with
+      <code>apksigner</code> from the installed Android SDK build-tools.</p>
+      <ul class="checklist">
+        <li><code class="status">[]</code> <code>./gradlew :app:assembleRelease</code> — with <code>keystore.properties</code> present, emits <code>app/build/outputs/apk/release/app-release.apk</code> (not <code>-unsigned</code>)</li>
+        <li><code class="status">[]</code> <code>"$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk</code> — certificate DN/alias matches the generated key</li>
+        <li><code class="status">[x]</code> <code>mv keystore.properties /tmp/ && ./gradlew :app:assembleRelease && mv /tmp/keystore.properties .</code> — build still succeeds without signing material (emits unsigned APK)</li>
+        <li><code class="status">[x]</code> <code>./gradlew :app:assembleDebug :app:testDebugUnitTest</code> — debug path untouched by the change</li>
+      </ul>
+      <div class="loop">
+        🔁 <strong>Do not exit this phase until every box above is checked.</strong>
+        If any command fails, fix the cause and re-run — loop until all pass.
+      </div>
+    </div>
+
+    <!-- ============ PHASE 2 ============ -->
+    <div class="phase">
+      <h3><code class="status">[]</code> Phase 2: PR Checks Workflow</h3>
+      <p>One workflow, one job. The three gates share a single Gradle invocation so
+      configuration, daemon, and cache warm-up are paid once. JDK 17 matches the
+      project's <code>jvmToolchain(17)</code> (foojay resolver would fetch it anyway,
+      but matching avoids a download).</p>
+
+      <h4>1. Author <code>.github/workflows/ci.yml</code></h4>
+      <pre><code>name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+      - name: Build, unit tests, lint
+        run: ./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
+      - name: Upload reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports
+          path: |
+            app/build/reports/
+            app/build/test-results/</code></pre>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Create the workflow file exactly as above (adjust action majors only if a run flags a deprecation)</li>
+        <li><code class="status">[]</code> <code>cache-read-only</code> guard: only <code>main</code> pushes write the Gradle cache, PRs read it — prevents cache-thrash from parallel PRs</li>
+      </ul>
+
+      <h4>2. Testing Strategy</h4>
+      <p>The only true validation of a workflow is a real run. Push the branch through
+      Graphite (project convention: <code>gt submit</code>, never raw <code>gh pr
+      create</code>) and watch the check run on the PR.</p>
+      <ul class="checklist">
+        <li><code class="status">[]</code> <code>./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug</code> — the exact CI command passes locally first</li>
+        <li><code class="status">[]</code> <code>gt submit</code> — opens/updates the PR for this branch; the <code>pull_request</code> trigger fires</li>
+        <li><code class="status">[]</code> <code>gh run watch $(gh run list --workflow=ci.yml --limit 1 --json databaseId -q '.[0].databaseId')</code> — CI job completes green</li>
+        <li><code class="status">[]</code> <code>gh pr checks</code> — the <code>checks</code> job is reported on the PR</li>
+      </ul>
+      <div class="loop">
+        🔁 <strong>Do not exit this phase until every box above is checked.</strong>
+        If any command fails, fix the cause and re-run — loop until all pass.
+      </div>
+    </div>
+
+    <!-- ============ PHASE 3 ============ -->
+    <div class="phase">
+      <h3><code class="status">[]</code> Phase 3: Signed Release Workflow</h3>
+      <p>Runs on <code>v*</code> tags (the release path) and on manual dispatch (the
+      dry-run path — same build, artifact only, no GitHub Release). CI reconstructs the
+      keystore from secrets into files that Phase 1's Gradle logic already understands,
+      so the build script needs zero CI-specific code.</p>
+
+      <h4>1. Author <code>.github/workflows/release.yml</code></h4>
+      <pre><code>name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write   # create the GitHub Release
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: true
+
+      - name: Materialize signing config
+        env:
+          KEYSTORE_B64: ${{ secrets.RELEASE_KEYSTORE_B64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: |
+          echo "$KEYSTORE_B64" | base64 -d > release.jks
+          cat > keystore.properties &lt;&lt;EOF
+          storeFile=release.jks
+          storePassword=$KEYSTORE_PASSWORD
+          keyAlias=$KEY_ALIAS
+          keyPassword=$KEY_PASSWORD
+          EOF
+
+      - name: Build signed release APK
+        run: ./gradlew :app:assembleRelease
+
+      - name: Verify signature
+        run: |
+          "$ANDROID_HOME"/build-tools/36.0.0/apksigner verify --print-certs \
+            app/build/outputs/apk/release/app-release.apk
+
+      - name: Name the APK
+        run: |
+          VERSION="${GITHUB_REF_NAME}"
+          [ "${GITHUB_REF_TYPE}" = "tag" ] || VERSION="manual-${GITHUB_SHA::7}"
+          cp app/build/outputs/apk/release/app-release.apk "nocturne-${VERSION}.apk"
+          echo "APK=nocturne-${VERSION}.apk" &gt;&gt; "$GITHUB_ENV"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.APK }}
+          path: ${{ env.APK }}
+
+      - name: GitHub Release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.APK }}
+          generate_release_notes: true</code></pre>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Create the workflow file as above; confirm the build-tools version present on the runner (<code>ls "$ANDROID_HOME"/build-tools/</code> in a step) and pin <code>apksigner</code>'s path accordingly, or glob the newest</li>
+        <li><code class="status">[]</code> Keystore materialization writes <code>release.jks</code> + <code>keystore.properties</code> at repo root — both matched by the Phase 1 gitignore rules and consumed by the Phase 1 Gradle logic unchanged</li>
+      </ul>
+
+      <h4>2. Document the release process</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> README: add a "Release" section — how to cut a release (<code>git tag v1.0 &amp;&amp; git push origin v1.0</code>), where the APK lands, which secrets the workflow needs, and how to build a signed APK locally (<code>keystore.properties</code>)</li>
+      </ul>
+
+      <h4>3. Testing Strategy</h4>
+      <p><strong>Dispatch constraint:</strong> GitHub only exposes a
+      <code>workflow_dispatch</code> workflow once the file exists on the <em>default
+      branch</em> — <code>gh workflow run release.yml --ref github-actions</code> fails
+      with "workflow not found" while the file lives only on this feature branch. So the
+      pre-merge dry run uses a <em>temporary</em> branch-scoped <code>push</code> trigger
+      (added, exercised, then removed before merge); the dispatch and tag paths are
+      exercised post-merge.</p>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Temporarily add <code>push: { branches: [github-actions] }</code> to <code>release.yml</code>'s <code>on:</code> block and push via <code>gt submit</code> — the release job runs against this branch as a dry run</li>
+        <li><code class="status">[]</code> <code>gh run watch $(gh run list --workflow=release.yml --limit 1 --json databaseId -q '.[0].databaseId')</code> — run completes green, including the in-workflow <code>apksigner verify</code> step</li>
+        <li><code class="status">[]</code> <code>gh run download $(gh run list --workflow=release.yml --limit 1 --json databaseId -q '.[0].databaseId')</code> then <code>"$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs nocturne-*.apk</code> — downloaded artifact carries the release certificate</li>
+        <li><code class="status">[]</code> Remove the temporary <code>push</code> trigger from <code>release.yml</code> before merge (final <code>on:</code> = tags + dispatch only)</li>
+        <li><code class="status">[]</code> (post-merge) <code>gh workflow run release.yml</code> — dispatch path works from <code>main</code></li>
+        <li><code class="status">[]</code> (post-merge) <code>git tag v1.0 &amp;&amp; git push origin v1.0</code>, then <code>gh release view v1.0</code> — GitHub Release exists with <code>nocturne-v1.0.apk</code> attached</li>
+      </ul>
+      <div class="loop">
+        🔁 <strong>Do not exit this phase until every box above is checked.</strong>
+        If any command fails, fix the cause and re-run — loop until all pass.
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== GLOBAL VALIDATION ===== -->
+  <section id="validation">
+    <h2>Validation Commands</h2>
+    <p>Execute these commands to validate the entire plan is complete:</p>
+    <ul class="checklist">
+      <li><code class="status">[]</code> <code>./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug</code> — the project's documented quality gates all pass locally</li>
+      <li><code class="status">[]</code> <code>./gradlew :app:assembleRelease &amp;&amp; "$ANDROID_HOME"/build-tools/*/apksigner verify app/build/outputs/apk/release/app-release.apk</code> — local signed release build verifies</li>
+      <li><code class="status">[]</code> <code>git status --porcelain | grep -E 'jks|keystore' ; test $? -eq 1</code> — no signing material is tracked or stageable</li>
+      <li><code class="status">[]</code> <code>gh pr checks</code> — CI workflow green on the open PR</li>
+      <li><code class="status">[]</code> <code>gh run list --workflow=release.yml --limit 1</code> — most recent release dry-run concluded <code>success</code></li>
+    </ul>
+    <div class="loop">
+      🔁 <strong>The plan is not complete until every box is checked and every command passes. If for some reason a step is not possible to complete, mark it with [f] and move on if possible.</strong>
+    </div>
+  </section>
+
+  <!-- ===== QUESTIONABLES ===== -->
+  <section id="questionables">
+    <h2>Questionables</h2>
+
+    <details>
+      <summary>APK vs AAB — plan builds an APK. Right call?</summary>
+      <p class="qa-answer"><strong>Assumption: APK.</strong> Nocturne is a sideloaded TV
+      launcher with no Play Store presence; AABs are only useful for Play publishing (and
+      would require Play App Signing). A raw signed APK is directly installable via
+      <code>adb install</code> on the TV. If Play publishing ever happens, add a parallel
+      <code>bundleRelease</code> job then.</p>
+    </details>
+
+    <details>
+      <summary>Release trigger: tag push + manual dispatch — or something else?</summary>
+      <p class="qa-answer"><strong>Assumption: both <code>v*</code> tags and
+      <code>workflow_dispatch</code>.</strong> Tags are the canonical "cut a release"
+      signal and map 1:1 to GitHub Releases; manual dispatch gives a free dry-run path
+      that exercises the whole signing pipeline without publishing anything.
+      Alternatives rejected: building a signed APK on every <code>main</code> push
+      (wasteful, no versioning story) and GitHub's "release published" event (requires
+      creating the release first, inverting the flow).</p>
+    </details>
+
+    <details>
+      <summary>Keystore custody — who holds it, what if it leaks or is lost?</summary>
+      <p class="qa-answer"><strong>Assumption: user-held keystore + GitHub repo secrets is
+      acceptable for this project.</strong> The keystore lives in
+      <code>~/keystores/</code> and a password manager backup; CI gets a base64 copy via
+      repo secrets. If <em>lost</em>: a new keystore means a new signing identity — every
+      installed device must uninstall/reinstall (no user data of consequence in a
+      launcher, so tolerable but annoying). If <em>leaked</em>: an attacker could sign
+      look-alike updates; rotate by generating a new key and accepting the
+      reinstall. For a personal sideloaded app this risk profile is fine; a hardware
+      token or KMS would be overkill.</p>
+    </details>
+
+    <details>
+      <summary>versionCode/versionName stay manual (1 / "1.0") — automate from the tag?</summary>
+      <p class="qa-answer"><strong>Assumption: manual for now.</strong>
+      <code>versionCode=1</code>, <code>versionName="1.0"</code> are hardcoded in
+      <code>app/build.gradle.kts</code>. Android updates require a strictly increasing
+      versionCode, so the user must bump it per release — the README release section will
+      say so. Deriving versionName from the git tag (and versionCode from run number or
+      commit count) is a clean follow-up but adds moving parts; deliberately out of scope
+      here.</p>
+    </details>
+
+    <details>
+      <summary>Release build keeps <code>isMinifyEnabled = false</code>?</summary>
+      <p class="qa-answer"><strong>Assumption: yes, unchanged.</strong> Turning on R8 for
+      a Hilt + SQLDelight + OkHttp app means a proguard-rules shakedown that deserves its
+      own tested change, not a rider on CI setup. APK size is a non-issue for a
+      sideloaded launcher.</p>
+    </details>
+
+    <details>
+      <summary>No emulator/instrumented tests in CI — is PR coverage enough?</summary>
+      <p class="qa-answer"><strong>Assumption: yes.</strong> CLAUDE.md mandates journey-based
+      UI testing on a live TV emulator, driven interactively — not Espresso in CI.
+      <code>connectedDebugAndroidTest</code> on a hosted runner would need an ARM/ATV
+      emulator boot (~5-10 min, flaky, no TV system images in the standard
+      reactivecircus matrix). JVM unit tests + lint + compile are the right CI
+      envelope for this project today.</p>
+    </details>
+
+    <details>
+      <summary>Action version pins are majors (<code>@v5</code>, <code>@v4</code>, <code>@v2</code>) — SHA-pin instead?</summary>
+      <p class="qa-answer"><strong>Assumption: major-version pins are acceptable.</strong>
+      SHA-pinning (with Dependabot to advance the pins) is the hardened posture, but for
+      a personal project the maintenance cost outweighs the supply-chain risk. The one
+      secret-touching third-party action is <code>softprops/action-gh-release</code> —
+      widely used; swap for a raw <code>gh release create</code> run-step if that
+      dependency feels wrong. Exact majors current as of authoring; the first live run
+      will surface any deprecation warnings.</p>
+    </details>
+
+    <details>
+      <summary>Branch protection: should CI be a required check?</summary>
+      <p class="qa-answer"><strong>Open — user decision, manual step.</strong> Once
+      <code>ci.yml</code> has run at least once, GitHub Settings → Branches → protect
+      <code>main</code> → require the <code>checks</code> job. Not scriptable into this
+      plan without admin API calls; noted here so it isn't forgotten. Optional for a
+      solo repo where PRs merge via Graphite anyway.</p>
+    </details>
+  </section>
+
+  <!-- ===== NOTES ===== -->
+  <section id="notes">
+    <h2>Notes</h2>
+
+    <h3>Toolchain facts the workflows rely on</h3>
+    <table>
+      <tr><th>Component</th><th>Version</th><th>CI implication</th></tr>
+      <tr><td>AGP</td><td>9.2.1</td><td>Needs JDK 17+ to run Gradle; <code>setup-java</code> temurin 17</td></tr>
+      <tr><td>Gradle</td><td>9.4.1 (wrapper)</td><td>Workflows always call <code>./gradlew</code>; never install Gradle separately</td></tr>
+      <tr><td>Kotlin</td><td>2.3.20</td><td>—</td></tr>
+      <tr><td>compileSdk / build-tools</td><td>36</td><td>Ubuntu runners preinstall recent SDK + build-tools; <code>apksigner</code> path must match an installed build-tools dir</td></tr>
+      <tr><td>Gradle config-cache + build-cache</td><td>enabled in <code>gradle.properties</code></td><td>Works on CI; <code>gradle/actions/setup-gradle</code> persists caches between runs</td></tr>
+    </table>
+
+    <h3>Design decisions</h3>
+    <ul>
+      <li><strong>Single Gradle invocation in CI</strong> (<code>assembleDebug testDebugUnitTest lintDebug</code>)
+      rather than three parallel jobs: this project is one module; parallel jobs would
+      each pay checkout + JDK + Gradle configuration and compile the same code three
+      times. One job is both faster wall-clock and 3× cheaper in runner minutes.</li>
+      <li><strong>The build script knows nothing about CI.</strong> The release workflow
+      fabricates exactly the two files a local signed build uses
+      (<code>release.jks</code>, <code>keystore.properties</code>). One code path,
+      testable locally, no <code>System.getenv</code> forks in Gradle.</li>
+      <li><strong>Signing config is optional, not required.</strong> <code>assembleRelease</code>
+      without keys yields an unsigned APK instead of a configuration error — contributors
+      and PR CI never trip over missing secrets.</li>
+      <li><strong>Secrets never echo:</strong> the materialize step writes files from
+      <code>env:</code>-mapped secrets via a heredoc whose delimiter is deliberately
+      <em>unquoted</em> so <code>$KEYSTORE_PASSWORD</code> etc. expand — do not "fix" it
+      to <code>&lt;&lt;'EOF'</code>, which would write the literal variable names into
+      <code>keystore.properties</code> and break signing. GitHub masks secret values in
+      logs regardless. Caveat: passwords containing <code>$</code>, backslash, or
+      backticks need care (shell expansion in the heredoc plus Java
+      <code>Properties.load</code> backslash-escaping) — simplest is to avoid those
+      characters when generating the keystore passwords.</li>
+      <li><strong>Graphite workflow respected:</strong> all pushes/PRs for these changes go
+      through <code>gt submit</code> per repo convention — the plan's validation commands
+      assume the PR already exists via Graphite.</li>
+    </ul>
+
+    <h3>Future work (out of scope)</h3>
+    <ul>
+      <li>Derive <code>versionName</code>/<code>versionCode</code> from git tags.</li>
+      <li>R8/minification shakedown for smaller release APKs.</li>
+      <li>Dependabot for actions + Gradle libs; SHA-pinned actions.</li>
+      <li>Nightly journey run against a self-hosted TV emulator (if journey tooling ever becomes headless-CI-able).</li>
+    </ul>
+  </section>
+
+  <!-- ===== AMENDMENTS ===== -->
+  <section id="amendments">
+    <h2>Amendments</h2>
+    <!-- Append-only: populated by Update Plan / Update References workflows after first execution. -->
+  </section>
+
+</main>
+</body>
+</html>
