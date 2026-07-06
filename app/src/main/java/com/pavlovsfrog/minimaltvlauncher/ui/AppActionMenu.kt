@@ -60,7 +60,7 @@ import com.pavlovsfrog.minimaltvlauncher.theme.NocturneColors
 import kotlin.math.roundToInt
 
 // Design §2, px ÷ 2 = dp/sp (1080p TV = xhdpi 2.0).
-private val CardWidth = 170.dp
+private val CardWidth = 190.dp
 private val CardRadius = 7.dp
 private val CardGap = 8.dp        // anchor.right → card, and the flip offset
 private val EdgeMargin = 12.dp
@@ -190,7 +190,7 @@ private fun MenuCard(app: AppInfo, onAction: (LauncherAction) -> Unit) {
     Text(
       text = app.label.uppercase(),
       fontFamily = FontFamily.SansSerif,
-      fontSize = 7.5.sp,
+      fontSize = 9.sp,
       fontWeight = FontWeight.Medium,
       letterSpacing = 1.sp,
       color = NocturneColors.MenuHeader,
@@ -234,10 +234,10 @@ private fun MenuCardItem(
     Text(
       text = label,
       fontFamily = FontFamily.SansSerif,
-      fontSize = 11.sp,
+      fontSize = 13.sp,
       fontWeight = FontWeight.Medium,
       color = labelColor,
-      modifier = Modifier.padding(horizontal = 7.dp, vertical = 6.dp),
+      modifier = Modifier.padding(horizontal = 7.dp, vertical = 7.dp),
     )
   }
 }
