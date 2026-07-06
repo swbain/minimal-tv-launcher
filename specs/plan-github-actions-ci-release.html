@@ -140,9 +140,10 @@
     clones, PR CI) the release build type simply stays unsigned, so nothing breaks for
     anyone without keys. Store the keystore (base64) and its passwords as GitHub Actions
     secrets.</p>
-    <p><strong>2) PR checks workflow</strong> (<code>ci.yml</code>): one Ubuntu job per
-    run — <code>:app:assembleDebug :app:testDebugUnitTest :app:lintDebug</code> — the
-    exact quality gates the README documents. Gradle caching via
+    <p><strong>2) PR checks workflow</strong> (<code>ci.yml</code>): three parallel
+    Ubuntu jobs — <code>build</code>, <code>unit-tests</code>, <code>lint</code> — one
+    per quality gate the README documents (amended 2026-07-06 from the original
+    single-job design; see Phase 4). Gradle caching via
     <code>gradle/actions/setup-gradle</code>, concurrency-cancel superseded runs, upload
     test/lint reports on failure. Instrumented tests are deliberately excluded (they need
     a TV emulator; per CLAUDE.md, UI verification is journey-based and local).</p>
@@ -274,6 +275,9 @@ gh secret set RELEASE_KEY_PASSWORD</code></pre>
     <!-- ============ PHASE 2 ============ -->
     <div class="phase">
       <h3><code class="status">[x]</code> Phase 2: PR Checks Workflow</h3>
+      <p><em>Superseded 2026-07-06: the single-job shape below was built and validated
+      green, then split into three parallel jobs — see Phase 4 and the Amendments
+      section. Kept as built history.</em></p>
       <p>One workflow, one job. The three gates share a single Gradle invocation so
       configuration, daemon, and cache warm-up are paid once. JDK 17 matches the
       project's <code>jvmToolchain(17)</code> (foojay resolver would fetch it anyway,
@@ -440,6 +444,38 @@ jobs:
         If any command fails, fix the cause and re-run — loop until all pass.
       </div>
     </div>
+
+    <!-- ============ PHASE 4 (amendment 2026-07-06) ============ -->
+    <div class="phase">
+      <h3><code class="status">[wip]</code> Phase 4: Split PR Checks into Parallel Jobs</h3>
+      <p>User decision (2026-07-06): trade the single-invocation efficiency of Phase 2
+      for per-gate granularity — <code>build</code>, <code>unit-tests</code>, and
+      <code>lint</code> as three independent jobs that start simultaneously. Each PR
+      check reports separately, a failing gate is identifiable at a glance, and the
+      other gates still finish. Cost: checkout + JDK + Gradle configuration paid three
+      times (~3× runner minutes); wall-clock roughly the slowest single gate.</p>
+
+      <h4>1. Rework <code>ci.yml</code> into three jobs</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Replace the single <code>checks</code> job with <code>build</code> (<code>:app:assembleDebug</code>), <code>unit-tests</code> (<code>:app:testDebugUnitTest</code>), and <code>lint</code> (<code>:app:lintDebug</code>) — no <code>needs:</code> between them, each with checkout / temurin JDK 17 / <code>gradle/actions/setup-gradle@v4</code></li>
+        <li><code class="status">[]</code> Distinct failure-artifact names per job (<code>test-reports</code>, <code>lint-reports</code>) — <code>upload-artifact@v4</code> hard-fails on duplicate names across parallel jobs</li>
+        <li><code class="status">[]</code> Cache policy: only <code>build</code> keeps the main-push cache-write guard; <code>unit-tests</code> and <code>lint</code> are always <code>cache-read-only: true</code> so three parallel jobs never race cache writes</li>
+      </ul>
+
+      <h4>2. Testing Strategy</h4>
+      <p>Same as Phase 2: the only true validation is a live run on the PR. Each gate's
+      Gradle task must also pass locally before pushing.</p>
+      <ul class="checklist">
+        <li><code class="status">[]</code> <code>./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug</code> — all three gates pass locally before the split ships</li>
+        <li><code class="status">[]</code> <code>gt submit</code> — pushes the reworked workflow to the open PR</li>
+        <li><code class="status">[]</code> <code>gh run watch $(gh run list --workflow=ci.yml --limit 1 --json databaseId -q '.[0].databaseId')</code> — run completes green with all three jobs</li>
+        <li><code class="status">[]</code> <code>gh pr checks</code> — <code>build</code>, <code>unit-tests</code>, and <code>lint</code> each reported as separate checks on the PR</li>
+      </ul>
+      <div class="loop">
+        🔁 <strong>Do not exit this phase until every box above is checked.</strong>
+        If any command fails, fix the cause and re-run — loop until all pass.
+      </div>
+    </div>
   </section>
 
   <!-- ===== GLOBAL VALIDATION ===== -->
@@ -564,7 +600,9 @@ jobs:
       <li><strong>Single Gradle invocation in CI</strong> (<code>assembleDebug testDebugUnitTest lintDebug</code>)
       rather than three parallel jobs: this project is one module; parallel jobs would
       each pay checkout + JDK + Gradle configuration and compile the same code three
-      times. One job is both faster wall-clock and 3× cheaper in runner minutes.</li>
+      times. One job is both faster wall-clock and 3× cheaper in runner minutes.
+      <em>Superseded 2026-07-06 by user decision — per-gate PR check granularity was
+      preferred over runner-minute economy; see Phase 4 and Amendments.</em></li>
       <li><strong>The build script knows nothing about CI.</strong> The release workflow
       fabricates exactly the two files a local signed build uses
       (<code>release.jks</code>, <code>keystore.properties</code>). One code path,
@@ -599,6 +637,16 @@ jobs:
   <section id="amendments">
     <h2>Amendments</h2>
     <!-- Append-only: populated by Update Plan / Update References workflows after first execution. -->
+    <details>
+      <summary>2026-07-06 — Split CI into three parallel jobs (build / unit-tests / lint)</summary>
+      <p>User decision after the single-job workflow shipped and ran green: replace the
+      one <code>checks</code> job with three independent jobs so each gate reports as
+      its own PR check and runs in parallel. Added Phase 4 with the rework and its
+      validation; Phase 2 and the "single Gradle invocation" design note are kept as
+      built history, marked superseded. Implementation details pinned in Phase 4:
+      distinct <code>upload-artifact@v4</code> names per job, and only <code>build</code>
+      writes the Gradle cache on <code>main</code> pushes.</p>
+    </details>
   </section>
 
 </main>
