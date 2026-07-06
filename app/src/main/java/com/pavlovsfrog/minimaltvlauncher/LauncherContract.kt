@@ -11,6 +11,8 @@ data class LauncherState(
   val clock: ClockUiState = ClockUiState("", "", ""),
   val weather: WeatherUiState = WeatherUiState.Hidden,
   val overlay: Overlay = Overlay.None,
+  /** Non-null while Move mode holds a tile locked for D-pad reordering (not a dimming overlay). */
+  val reordering: AppInfo? = null,
 )
 
 /** At most one overlay owns the screen (and TV focus) at a time. */
@@ -60,7 +62,19 @@ sealed interface LauncherAction {
 
   data class HideApp(val app: AppInfo) : LauncherAction
 
+  /** Chosen "Move" in the menu card — enters Move mode with [app] locked. */
+  data class MoveApp(val app: AppInfo) : LauncherAction
+
+  /** A D-pad step while in Move mode; reorders the grid and persists immediately. */
+  data class ReorderStep(val direction: MoveDirection) : LauncherAction
+
+  /** OK/Back in Move mode — leaves Move mode (order is already persisted per step). */
+  data object CommitMove : LauncherAction
+
   data class UninstallApp(val app: AppInfo) : LauncherAction
+
+  /** Chosen "Open app settings" — fires the platform app-info screen for [app]. */
+  data class OpenAppSettings(val app: AppInfo) : LauncherAction
 
   data object OpenSettings : LauncherAction
 
@@ -78,4 +92,7 @@ sealed interface LauncherEvent {
 
   /** Fires the platform ACTION_DELETE flow — the system owns the confirmation dialog. */
   data class RequestUninstall(val packageName: String) : LauncherEvent
+
+  /** Fires the platform app-info screen (ACTION_APPLICATION_DETAILS_SETTINGS). */
+  data class OpenAppInfo(val packageName: String) : LauncherEvent
 }

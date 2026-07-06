@@ -1,0 +1,18 @@
+-- User-defined home-grid order. Stores a full ordering of package names (visible and hidden
+-- alike) as contiguous positions; packages absent from this table fall back to install order.
+CREATE TABLE appOrder (
+  packageName TEXT NOT NULL PRIMARY KEY,
+  position INTEGER NOT NULL
+);
+
+selectAll:
+SELECT packageName FROM appOrder ORDER BY position;
+
+upsert:
+INSERT OR REPLACE INTO appOrder(packageName, position) VALUES (?, ?);
+
+deleteAll:
+DELETE FROM appOrder;
+
+prune:
+DELETE FROM appOrder WHERE packageName NOT IN ?;
