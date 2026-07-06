@@ -159,11 +159,11 @@ private fun GhostTile(app: AppInfo, bounds: Rect) {
     modifier = Modifier
       .offset { IntOffset(bounds.left.roundToInt(), bounds.top.roundToInt()) }
       .size(width = tileWidth, height = tileHeight)
-      .shadow(24.dp, shape, ambientColor = NocturneColors.Amber, spotColor = NocturneColors.Amber)
+      .shadow(24.dp, shape, ambientColor = NocturneColors.Focus, spotColor = NocturneColors.Focus)
       .clip(shape)
       .background(NocturneColors.BaseBlack)
       .background(NocturneColors.CardFill)
-      .border(3.dp, NocturneColors.Amber, shape),
+      .border(3.dp, NocturneColors.Focus, shape),
   ) {
     AppTileArt(app)
   }
@@ -224,7 +224,7 @@ private fun MenuCardItem(
       pressedContentColor = labelColor,
     ),
     border = ClickableSurfaceDefaults.border(
-      focusedBorder = Border(BorderStroke(1.dp, NocturneColors.Amber)),
+      focusedBorder = Border(BorderStroke(1.dp, NocturneColors.Focus)),
     ),
     scale = ClickableSurfaceDefaults.scale(focusedScale = 1f),
     modifier = Modifier

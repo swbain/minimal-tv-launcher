@@ -410,7 +410,7 @@ private fun GearButton(onClick: () -> Unit, focusRequester: FocusRequester) {
     ),
     border = ClickableSurfaceDefaults.border(
       border = Border(BorderStroke(1.dp, NocturneColors.GearBorder)),
-      focusedBorder = Border(BorderStroke(2.dp, NocturneColors.Amber)),
+      focusedBorder = Border(BorderStroke(2.dp, NocturneColors.Focus)),
     ),
     scale = ClickableSurfaceDefaults.scale(focusedScale = 1.08f),
     modifier = Modifier
@@ -539,11 +539,11 @@ private fun AppCard(
     scale = CardDefaults.scale(focusedScale = if (isMoving) 1.1f else 1.07f),
     border = CardDefaults.border(
       border = Border(BorderStroke(if (isMoving) 3.dp else 1.dp, NocturneColors.CardBorder)),
-      focusedBorder = Border(BorderStroke(if (isMoving) 5.dp else 3.dp, NocturneColors.Amber)),
+      focusedBorder = Border(BorderStroke(if (isMoving) 5.dp else 3.dp, NocturneColors.Focus)),
     ),
     glow = CardDefaults.glow(
       focusedGlow = Glow(
-        elevationColor = NocturneColors.Amber,
+        elevationColor = NocturneColors.Focus,
         elevation = if (isMoving) 40.dp else 24.dp,
       ),
     ),
