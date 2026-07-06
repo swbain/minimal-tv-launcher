@@ -44,6 +44,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -73,7 +74,7 @@ private val SubtitleStyle = TextStyle(
 )
 
 private val RowLabelStyle = TextStyle(
-  fontFamily = Newsreader,
+  fontFamily = FontFamily.SansSerif,
   fontSize = 15.sp,
 )
 
