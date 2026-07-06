@@ -6,6 +6,7 @@ import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.content.Intent
 import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -41,6 +42,7 @@ class MainActivity : ComponentActivity() {
           when (event) {
             is LauncherEvent.LaunchApp -> launchApp(event.componentName)
             is LauncherEvent.RequestUninstall -> requestUninstall(event.packageName)
+            is LauncherEvent.OpenAppInfo -> openAppInfo(event.packageName)
           }
         }
       }
@@ -77,6 +79,16 @@ class MainActivity : ComponentActivity() {
    */
   private fun requestUninstall(packageName: String) {
     startActivity(Intent(Intent.ACTION_DELETE, "package:$packageName".toUri()))
+  }
+
+  /** Opens Android's own app-info screen; ScreenResumed reconciles any change on return. */
+  private fun openAppInfo(packageName: String) {
+    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, "package:$packageName".toUri())
+    try {
+      startActivity(intent)
+    } catch (_: ActivityNotFoundException) {
+      viewModel.onAction(LauncherAction.LaunchFailed)
+    }
   }
 
   private fun launchApp(componentName: ComponentName) {

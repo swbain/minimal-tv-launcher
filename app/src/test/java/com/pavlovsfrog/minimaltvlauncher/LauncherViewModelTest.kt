@@ -2,6 +2,7 @@ package com.pavlovsfrog.minimaltvlauncher
 
 import android.content.ComponentName
 import androidx.lifecycle.viewModelScope
+import com.pavlovsfrog.minimaltvlauncher.data.OrderRepository
 import com.pavlovsfrog.minimaltvlauncher.data.VisibilityRepository
 import com.pavlovsfrog.minimaltvlauncher.weather.TempUnit
 import com.pavlovsfrog.minimaltvlauncher.weather.Weather
@@ -75,6 +76,22 @@ class LauncherViewModelTest {
     }
   }
 
+  private class FakeOrderRepository : OrderRepository {
+    val order = MutableStateFlow<List<String>>(emptyList())
+    val setOrderCalls = mutableListOf<List<String>>()
+
+    override fun order(): Flow<List<String>> = order
+
+    override suspend fun setOrder(packageNames: List<String>) {
+      setOrderCalls += packageNames
+      order.value = packageNames
+    }
+
+    override suspend fun prune(installed: Collection<String>) {
+      order.update { saved -> saved.filter { it in installed } }
+    }
+  }
+
   private fun appInfo(label: String) = AppInfo(
     label = label,
     packageName = "com.pavlovsfrog.$label",
@@ -86,10 +103,17 @@ class LauncherViewModelTest {
   private val loader = FakeAppsLoader()
   private val weather = FakeWeatherProvider()
   private val visibility = FakeVisibilityRepository()
+  private val order = FakeOrderRepository()
   private val fixedNow = 1_782_255_660_000L
 
   private fun buildViewModel() =
-    LauncherViewModel(loader, weather, timeSource = { fixedNow }, visibilityRepository = visibility)
+    LauncherViewModel(
+      loader,
+      weather,
+      timeSource = { fixedNow },
+      visibilityRepository = visibility,
+      orderRepository = order,
+    )
 
   private fun runVmTest(block: suspend TestScope.(LauncherViewModel) -> Unit) =
     runTest(dispatcher) {
@@ -387,5 +411,121 @@ class LauncherViewModelTest {
 
     assertEquals(loadsBeforeResume + 1, loader.loadCount)
     assertEquals(WeatherUiState.Ready(tempText = "60°", condition = "Overcast"), viewModel.state.value.weather)
+  }
+
+  @Test
+  fun `home renders in the saved order`() = runVmTest { viewModel ->
+    val a = appInfo("a")
+    val b = appInfo("b")
+    val c = appInfo("c")
+    loader.apps = listOf(a, b, c) // arrives alphabetically, as the real loader sorts
+    order.order.value = listOf(c.packageName, a.packageName, b.packageName)
+    dispatcher.scheduler.runCurrent()
+
+    assertEquals(listOf(c, a, b), (viewModel.state.value.apps as AppsUiState.Ready).apps)
+  }
+
+  @Test
+  fun `apps absent from the saved order fall back to alphabetical after the ordered ones`() =
+    runVmTest { viewModel ->
+      val a = appInfo("a")
+      val b = appInfo("b")
+      val c = appInfo("c")
+      loader.apps = listOf(a, b, c)
+      order.order.value = listOf(c.packageName) // only c is explicitly ordered
+      dispatcher.scheduler.runCurrent()
+
+      // c first (ranked), then a, b keep their incoming alphabetical order (stable sort).
+      assertEquals(listOf(c, a, b), (viewModel.state.value.apps as AppsUiState.Ready).apps)
+    }
+
+  @Test
+  fun `MoveApp enters move mode and closes the menu`() = runVmTest { viewModel ->
+    val cinema = appInfo("cinema")
+    loader.apps = listOf(cinema)
+    dispatcher.scheduler.runCurrent()
+    viewModel.onAction(LauncherAction.AppLongPressed(cinema))
+
+    viewModel.onAction(LauncherAction.MoveApp(cinema))
+
+    assertEquals(cinema, viewModel.state.value.reordering)
+    assertEquals(Overlay.None, viewModel.state.value.overlay)
+  }
+
+  @Test
+  fun `ReorderStep persists the reordered list and reflows the grid`() = runVmTest { viewModel ->
+    val a = appInfo("a")
+    val b = appInfo("b")
+    val c = appInfo("c")
+    val d = appInfo("d")
+    val e = appInfo("e")
+    loader.apps = listOf(a, b, c, d, e)
+    dispatcher.scheduler.runCurrent()
+    viewModel.onAction(LauncherAction.MoveApp(b))
+
+    viewModel.onAction(LauncherAction.ReorderStep(MoveDirection.Right))
+    dispatcher.scheduler.runCurrent()
+
+    val expected = listOf(a, c, b, d, e)
+    assertEquals(listOf(expected.map { it.packageName }), order.setOrderCalls)
+    assertEquals(expected, (viewModel.state.value.apps as AppsUiState.Ready).apps)
+  }
+
+  @Test
+  fun `a blocked ReorderStep writes nothing`() = runVmTest { viewModel ->
+    val a = appInfo("a")
+    val b = appInfo("b")
+    loader.apps = listOf(a, b)
+    dispatcher.scheduler.runCurrent()
+    viewModel.onAction(LauncherAction.MoveApp(a)) // first column
+
+    viewModel.onAction(LauncherAction.ReorderStep(MoveDirection.Left)) // blocked at the edge
+    dispatcher.scheduler.runCurrent()
+
+    assertEquals(emptyList<List<String>>(), order.setOrderCalls)
+  }
+
+  @Test
+  fun `ReorderStep is ignored when not in move mode`() = runVmTest { viewModel ->
+    val a = appInfo("a")
+    val b = appInfo("b")
+    loader.apps = listOf(a, b)
+    dispatcher.scheduler.runCurrent()
+
+    viewModel.onAction(LauncherAction.ReorderStep(MoveDirection.Right))
+    dispatcher.scheduler.runCurrent()
+
+    assertEquals(emptyList<List<String>>(), order.setOrderCalls)
+  }
+
+  @Test
+  fun `CommitMove leaves move mode`() = runVmTest { viewModel ->
+    val cinema = appInfo("cinema")
+    loader.apps = listOf(cinema)
+    dispatcher.scheduler.runCurrent()
+    viewModel.onAction(LauncherAction.MoveApp(cinema))
+
+    viewModel.onAction(LauncherAction.CommitMove)
+
+    assertEquals(null, viewModel.state.value.reordering)
+  }
+
+  @Test
+  fun `OpenAppSettings emits OpenAppInfo and closes the menu`() = runVmTest { viewModel ->
+    val cinema = appInfo("cinema")
+    loader.apps = listOf(cinema)
+    dispatcher.scheduler.runCurrent()
+    viewModel.onAction(LauncherAction.AppLongPressed(cinema))
+
+    val events = mutableListOf<LauncherEvent>()
+    val collector = launch(UnconfinedTestDispatcher(testScheduler)) {
+      viewModel.events.toList(events)
+    }
+    viewModel.onAction(LauncherAction.OpenAppSettings(cinema))
+    dispatcher.scheduler.runCurrent()
+    collector.cancel()
+
+    assertEquals(Overlay.None, viewModel.state.value.overlay)
+    assertEquals(listOf(LauncherEvent.OpenAppInfo(cinema.packageName)), events)
   }
 }

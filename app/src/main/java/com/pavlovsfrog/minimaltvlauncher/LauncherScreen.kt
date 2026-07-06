@@ -73,7 +73,8 @@ import com.pavlovsfrog.minimaltvlauncher.ui.AppActionMenu
 import com.pavlovsfrog.minimaltvlauncher.ui.NocturneBackground
 import kotlinx.coroutines.delay
 
-private const val COLUMNS = 4
+// Grid width lives in ReorderMath.kt (GRID_COLUMNS) so the ViewModel's reorder math and the grid
+// layout can never disagree.
 
 // Design canvas is 1920×1080 px; TV 1080p is xhdpi (2.0), so design px ÷ 2 = dp/sp.
 // Text shadow matches the design's `text-shadow: 0 3px 18px rgba(0,0,0,0.7)` (raw px at 1080p).
@@ -423,7 +424,7 @@ private fun AppGrid(
   // The grid is the whole screen: design's full-screen scroll surface with
   // padding 74px 100px 120px (÷2 → dp), so cards slide under the screen edges.
   LazyVerticalGrid(
-    columns = GridCells.Fixed(COLUMNS),
+    columns = GridCells.Fixed(GRID_COLUMNS),
     horizontalArrangement = Arrangement.spacedBy(20.dp),
     verticalArrangement = Arrangement.spacedBy(20.dp),
     contentPadding = PaddingValues(start = 50.dp, top = 37.dp, end = 50.dp, bottom = 60.dp),

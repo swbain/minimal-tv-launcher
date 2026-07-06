@@ -3,6 +3,7 @@ package com.pavlovsfrog.minimaltvlauncher
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.pavlovsfrog.minimaltvlauncher.data.OrderRepository
 import com.pavlovsfrog.minimaltvlauncher.data.VisibilityRepository
 import com.pavlovsfrog.minimaltvlauncher.weather.WeatherProvider
 import com.pavlovsfrog.minimaltvlauncher.weather.WmoWeatherCode
@@ -27,6 +28,7 @@ class LauncherViewModel @Inject constructor(
   private val weatherRepository: WeatherProvider,
   private val timeSource: TimeSource,
   private val visibilityRepository: VisibilityRepository,
+  private val orderRepository: OrderRepository,
 ) : ViewModel() {
 
   private val _state = MutableStateFlow(LauncherState())
@@ -65,6 +67,14 @@ class LauncherViewModel @Inject constructor(
         _state.update { it.copy(overlay = Overlay.None) }
         _events.tryEmit(LauncherEvent.RequestUninstall(action.app.packageName))
       }
+      is LauncherAction.OpenAppSettings -> {
+        _state.update { it.copy(overlay = Overlay.None) }
+        _events.tryEmit(LauncherEvent.OpenAppInfo(action.app.packageName))
+      }
+      is LauncherAction.MoveApp ->
+        _state.update { it.copy(overlay = Overlay.None, reordering = action.app) }
+      LauncherAction.CommitMove -> _state.update { it.copy(reordering = null) }
+      is LauncherAction.ReorderStep -> reorder(action.direction)
       LauncherAction.OpenSettings -> _state.update { it.copy(overlay = Overlay.Settings) }
       LauncherAction.CloseSettings -> _state.update { it.copy(overlay = Overlay.None) }
       is LauncherAction.ToggleFavorite -> {
@@ -86,12 +96,22 @@ class LauncherViewModel @Inject constructor(
     }
   }
 
-  /** Installed apps × hidden set → state, so a DB toggle updates home without a reload. */
+  /**
+   * Installed apps × hidden set × saved order → state, so a DB toggle or reorder updates home
+   * without a reload. Apps are sorted by their position in the saved order; unknown packages sort
+   * last, and since [installedApps] arrives alphabetically, stable-sort keeps them alphabetical.
+   */
   private fun deriveAppsState() {
     viewModelScope.launch {
-      combine(installedApps.filterNotNull(), visibilityRepository.hiddenPackages()) {
-        installed, hidden ->
-        installed.map { AppEntry(app = it, isFavorite = it.packageName !in hidden) }
+      combine(
+        installedApps.filterNotNull(),
+        visibilityRepository.hiddenPackages(),
+        orderRepository.order(),
+      ) { installed, hidden, order ->
+        val rank = order.withIndex().associate { (index, pkg) -> pkg to index }
+        installed
+          .sortedBy { rank[it.packageName] ?: Int.MAX_VALUE }
+          .map { AppEntry(app = it, isFavorite = it.packageName !in hidden) }
       }.collect { entries ->
         _state.update {
           it.copy(
@@ -105,12 +125,28 @@ class LauncherViewModel @Inject constructor(
     }
   }
 
+  /**
+   * One Move-mode step: reorder the visible favorites, thread the change back through the full
+   * order (keeping hidden apps pinned), and persist. A blocked edge move writes nothing.
+   */
+  private fun reorder(direction: MoveDirection) {
+    val moving = state.value.reordering?.packageName ?: return
+    val ready = state.value.apps as? AppsUiState.Ready ?: return
+    val visible = ready.apps.map(AppInfo::packageName)
+    val newVisible = moveWithinVisible(visible, moving, direction, GRID_COLUMNS)
+    if (newVisible == visible) return
+    val newFull = threadVisibleIntoFull(ready.allApps.map { it.app.packageName }, newVisible)
+    viewModelScope.launch { orderRepository.setOrder(newFull) }
+  }
+
   private fun reloadApps() {
     viewModelScope.launch {
       val apps = appsLoader.loadApps()
       installedApps.value = apps
-      // Keep the table honest: uninstall → reinstall behaves like a fresh install (visible).
-      visibilityRepository.prune(apps.map(AppInfo::packageName))
+      // Keep the tables honest: uninstall → reinstall behaves like a fresh install (visible).
+      val packages = apps.map(AppInfo::packageName)
+      visibilityRepository.prune(packages)
+      orderRepository.prune(packages)
     }
   }
 
