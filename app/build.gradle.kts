@@ -42,11 +42,11 @@ val keystoreProperties = Properties().apply {
 
 android {
     namespace = "com.pavlovsfrog.minimaltvlauncher"
-    compileSdk = 36
+    compileSdk = 37
     defaultConfig {
         applicationId = "com.pavlovsfrog.minimaltvlauncher"
         minSdk = 24
-        targetSdk = 36
+        targetSdk = 37
         versionCode = 1
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
