@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(./keystore.properties)",
+      "Read(**/keystore.properties)",
+      "Read(**/*.jks)",
+      "Read(**/*.keystore)",
+      "Read(~/keystores/**)"
+    ]
+  }
+}

@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
   alias(libs.plugins.android.application)
   alias(libs.plugins.compose.compiler)
@@ -30,6 +32,14 @@ tasks.withType(com.google.devtools.ksp.gradle.KspAATask::class.java).configureEa
   }
 }
 
+// Release signing is optional: keystore.properties (gitignored) provides it locally and in
+// the release workflow; when absent (fresh clones, PR CI) assembleRelease emits an unsigned APK.
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val releaseSigningAvailable = keystorePropertiesFile.exists()
+val keystoreProperties = Properties().apply {
+  if (releaseSigningAvailable) keystorePropertiesFile.inputStream().use(::load)
+}
+
 android {
     namespace = "com.pavlovsfrog.minimaltvlauncher"
     compileSdk = 36
@@ -42,8 +52,22 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        if (releaseSigningAvailable) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            if (releaseSigningAvailable) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
