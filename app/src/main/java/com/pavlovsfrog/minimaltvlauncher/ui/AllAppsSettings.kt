@@ -11,6 +11,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,9 +19,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -33,9 +36,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -48,10 +56,30 @@ import androidx.tv.material3.Text
 import com.pavlovsfrog.minimaltvlauncher.AppEntry
 import com.pavlovsfrog.minimaltvlauncher.LauncherAction
 import com.pavlovsfrog.minimaltvlauncher.theme.NocturneColors
+import com.pavlovsfrog.minimaltvlauncher.theme.Newsreader
+
+private val TitleStyle = TextStyle(
+  fontFamily = Newsreader,
+  fontWeight = FontWeight.SemiBold,
+  fontSize = 17.sp,
+  color = NocturneColors.TextPrimary,
+)
+
+private val SubtitleStyle = TextStyle(
+  fontFamily = Newsreader,
+  fontStyle = FontStyle.Italic,
+  fontSize = 11.sp,
+  color = NocturneColors.TextMuted,
+)
+
+private val RowLabelStyle = TextStyle(
+  fontFamily = Newsreader,
+  fontSize = 15.sp,
+)
 
 /**
  * Design §4: full-screen takeover listing every installed app in two columns; the star
- * toggles home visibility in place (no confirm), the back pill / Back key close.
+ * toggles home visibility in place (no confirm), the back button / Back key close.
  */
 @Composable
 fun AllAppsSettings(
@@ -82,18 +110,11 @@ fun AllAppsSettings(
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-      BackPill(onClick = { onAction(LauncherAction.CloseSettings) })
-      Text(
-        text = "Apps",
-        fontSize = 17.sp,
-        fontWeight = FontWeight.SemiBold,
-        color = NocturneColors.TextPrimary,
-      )
+      BackButton(onClick = { onAction(LauncherAction.CloseSettings) })
+      Text(text = "Apps", style = TitleStyle)
       Text(
         text = "$favoriteCount of ${allApps.size} on home · press to star or unstar",
-        fontSize = 10.sp,
-        fontStyle = FontStyle.Italic,
-        color = NocturneColors.TextMuted,
+        style = SubtitleStyle,
       )
     }
 
@@ -101,7 +122,8 @@ fun AllAppsSettings(
       columns = GridCells.Fixed(2),
       horizontalArrangement = Arrangement.spacedBy(32.dp),
       verticalArrangement = Arrangement.spacedBy(4.dp),
-      modifier = Modifier.fillMaxSize().padding(top = 18.dp),
+      contentPadding = PaddingValues(vertical = 4.dp),
+      modifier = Modifier.fillMaxSize().padding(top = 14.dp),
     ) {
       itemsIndexed(allApps, key = { _, entry -> entry.app.packageName }) { index, entry ->
         AppRow(
@@ -114,11 +136,12 @@ fun AllAppsSettings(
   }
 }
 
+/** Icon-only circular back button, styled after the home screen's gear button. */
 @Composable
-private fun BackPill(onClick: () -> Unit) {
+private fun BackButton(onClick: () -> Unit) {
   Surface(
     onClick = onClick,
-    shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(percent = 50)),
+    shape = ClickableSurfaceDefaults.shape(CircleShape),
     colors = ClickableSurfaceDefaults.colors(
       containerColor = NocturneColors.GearFill,
       contentColor = NocturneColors.TextSecondary,
@@ -131,51 +154,65 @@ private fun BackPill(onClick: () -> Unit) {
       border = Border(BorderStroke(1.dp, NocturneColors.GearBorder)),
       focusedBorder = Border(BorderStroke(2.dp, NocturneColors.Amber)),
     ),
-    scale = ClickableSurfaceDefaults.scale(focusedScale = 1.05f),
+    scale = ClickableSurfaceDefaults.scale(focusedScale = 1.08f),
+    modifier = Modifier
+      .size(32.dp)
+      .semantics { contentDescription = "Back" },
   ) {
-    Text(
-      text = "‹ Back",
-      fontSize = 11.sp,
-      modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
-    )
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+      Text(text = "←", fontSize = 15.sp)
+    }
   }
 }
 
 @Composable
 private fun AppRow(entry: AppEntry, onToggle: () -> Unit, modifier: Modifier = Modifier) {
   val app = entry.app
+  var focused by remember { mutableStateOf(false) }
   Surface(
     onClick = onToggle,
     shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
     colors = ClickableSurfaceDefaults.colors(
-      containerColor = androidx.compose.ui.graphics.Color.Transparent,
+      containerColor = Color.Transparent,
       contentColor = NocturneColors.TextSecondary,
       focusedContainerColor = NocturneColors.RowFocusFill,
       focusedContentColor = NocturneColors.TextPrimary,
       pressedContainerColor = NocturneColors.RowFocusFill,
       pressedContentColor = NocturneColors.TextPrimary,
     ),
-    border = ClickableSurfaceDefaults.border(
-      focusedBorder = Border(BorderStroke(1.dp, NocturneColors.Amber), inset = 1.dp),
-    ),
-    modifier = modifier.fillMaxWidth(),
+    scale = ClickableSurfaceDefaults.scale(focusedScale = 1f),
+    modifier = modifier
+      .fillMaxWidth()
+      .onFocusChanged { focused = it.isFocused },
   ) {
-    Row(
-      verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.spacedBy(12.dp),
-      modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 6.dp),
-    ) {
-      AppChip(entry = entry)
-      Text(
-        text = app.label,
-        fontSize = 13.5.sp,
-        color = if (entry.isFavorite) NocturneColors.TextSecondary else NocturneColors.TextDimmed,
-        modifier = Modifier.weight(1f),
-      )
-      Text(
-        text = if (entry.isFavorite) "★" else "☆",
-        fontSize = 14.sp,
-        color = if (entry.isFavorite) NocturneColors.Amber else NocturneColors.StarOff,
+    Box {
+      Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 6.dp),
+      ) {
+        AppChip(entry = entry)
+        Text(
+          text = app.label,
+          style = RowLabelStyle,
+          color = if (entry.isFavorite) NocturneColors.TextSecondary else NocturneColors.TextDimmed,
+          modifier = Modifier.weight(1f),
+        )
+        Text(
+          text = if (entry.isFavorite) "★" else "☆",
+          fontSize = 14.sp,
+          color = if (entry.isFavorite) NocturneColors.Amber else NocturneColors.StarOff,
+        )
+      }
+      // Focus indicator: amber accent bar hugging the row's leading edge.
+      Box(
+        modifier = Modifier
+          .align(Alignment.CenterStart)
+          .padding(start = 3.dp)
+          .width(3.dp)
+          .height(18.dp)
+          .clip(RoundedCornerShape(1.5.dp))
+          .background(if (focused) NocturneColors.Amber else Color.Transparent),
       )
     }
   }
