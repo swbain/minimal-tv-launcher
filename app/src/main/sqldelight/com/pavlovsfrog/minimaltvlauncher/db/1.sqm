@@ -1,0 +1,7 @@
+-- v1 → v2: add the home-grid order table. Fresh installs get it from AppOrder.sq's CREATE at the
+-- current schema version; devices already carrying a v1 launcher.db (hiddenApp only) get it here,
+-- so upgrading never hits "no such table: appOrder".
+CREATE TABLE appOrder (
+  packageName TEXT NOT NULL PRIMARY KEY,
+  position INTEGER NOT NULL
+);
