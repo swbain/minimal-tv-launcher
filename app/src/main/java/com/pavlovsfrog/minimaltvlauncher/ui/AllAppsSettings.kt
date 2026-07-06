@@ -25,6 +25,8 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -52,12 +54,13 @@ import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Border
 import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.ExperimentalTvMaterial3Api
+import androidx.tv.material3.Icon
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import com.pavlovsfrog.minimaltvlauncher.AppEntry
 import com.pavlovsfrog.minimaltvlauncher.LauncherAction
-import com.pavlovsfrog.minimaltvlauncher.theme.NocturneColors
 import com.pavlovsfrog.minimaltvlauncher.theme.Newsreader
+import com.pavlovsfrog.minimaltvlauncher.theme.NocturneColors
 
 private val TitleStyle = TextStyle(
   fontFamily = Newsreader,
@@ -161,7 +164,7 @@ private fun BackButton(onClick: () -> Unit) {
       .semantics { contentDescription = "Back" },
   ) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-      Text(text = "←", fontSize = 15.sp)
+      Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "back")
     }
   }
 }
